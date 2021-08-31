@@ -1,0 +1,444 @@
+
+LOGGING MAPPING RESULTS:
+====================
+TASK: 
+ Name: APP_0_Input_Layer_2
+ RAM: 1.5
+ MI: 5
+ CORES: 2
+ Data in: 41
+ Data out: 46
+ Storage: 1
+ Source Mobile ID: 2
+ Can Offload: 0
+ TASK ID: 2
+
+VERTEX:
+ Cores: 4
+ MIPS: 4
+ Storage: 16
+ RAM: 8
+ Type: mobile
+ Free: 1
+ Coords: ( 2, 2)
+ Battery: 100
+ ID: 2
+
+START TIME: 4.61232
+FINISH TIME: 5.86232
+====================
+TASK: 
+ Name: APP_0_Input_Layer_0
+ RAM: 3.32
+ MI: 9
+ CORES: 2
+ Data in: 34
+ Data out: 41
+ Storage: 1
+ Source Mobile ID: 2
+ Can Offload: 1
+ TASK ID: 0
+
+VERTEX:
+ Cores: 4
+ MIPS: 4
+ Storage: 16
+ RAM: 8
+ Type: mobile
+ Free: 1
+ Coords: ( 2, 2)
+ Battery: 100
+ ID: 2
+
+START TIME: 4.61232
+FINISH TIME: 6.86232
+====================
+TASK: 
+ Name: APP_0_Input_Layer_1
+ RAM: 3.33
+ MI: 4
+ CORES: 3
+ Data in: 10
+ Data out: 24
+ Storage: 1
+ Source Mobile ID: 2
+ Can Offload: 0
+ TASK ID: 1
+
+VERTEX:
+ Cores: 4
+ MIPS: 4
+ Storage: 16
+ RAM: 8
+ Type: mobile
+ Free: 1
+ Coords: ( 2, 2)
+ Battery: 100
+ ID: 2
+
+START TIME: 6.86232
+FINISH TIME: 7.86232
+====================
+TASK: 
+ Name: APP_0_Inner_Layer_0:2
+ RAM: 2.61
+ MI: 8
+ CORES: 1
+ Data in: 14
+ Data out: 18
+ Storage: 3
+ Source Mobile ID: 2
+ Can Offload: 0
+ TASK ID: 5
+
+VERTEX:
+ Cores: 4
+ MIPS: 4
+ Storage: 16
+ RAM: 8
+ Type: mobile
+ Free: 1
+ Coords: ( 2, 2)
+ Battery: 100
+ ID: 2
+
+START TIME: 6.86232
+FINISH TIME: 8.86232
+====================
+TASK: 
+ Name: APP_0_Inner_Layer_0:3
+ RAM: 3.96
+ MI: 5
+ CORES: 1
+ Data in: 21
+ Data out: 46
+ Storage: 3
+ Source Mobile ID: 2
+ Can Offload: 0
+ TASK ID: 6
+
+VERTEX:
+ Cores: 4
+ MIPS: 4
+ Storage: 16
+ RAM: 8
+ Type: mobile
+ Free: 1
+ Coords: ( 2, 2)
+ Battery: 100
+ ID: 2
+
+START TIME: 7.86232
+FINISH TIME: 9.11232
+====================
+TASK: 
+ Name: APP_0_Inner_Layer_0:1
+ RAM: 2.77
+ MI: 8
+ CORES: 3
+ Data in: 2
+ Data out: 31
+ Storage: 3
+ Source Mobile ID: 2
+ Can Offload: 0
+ TASK ID: 4
+
+VERTEX:
+ Cores: 4
+ MIPS: 4
+ Storage: 16
+ RAM: 8
+ Type: mobile
+ Free: 1
+ Coords: ( 2, 2)
+ Battery: 100
+ ID: 2
+
+START TIME: 8.86232
+FINISH TIME: 10.8623
+====================
+TASK: 
+ Name: APP_0_Inner_Layer_0:0
+ RAM: 3.24
+ MI: 2
+ CORES: 2
+ Data in: 27
+ Data out: 20
+ Storage: 3
+ Source Mobile ID: 2
+ Can Offload: 0
+ TASK ID: 3
+
+VERTEX:
+ Cores: 4
+ MIPS: 4
+ Storage: 16
+ RAM: 8
+ Type: mobile
+ Free: 1
+ Coords: ( 2, 2)
+ Battery: 100
+ ID: 2
+
+START TIME: 10.8623
+FINISH TIME: 11.3623
+====================
+TASK: 
+ Name: APP_1_Input_Layer_0
+ RAM: 2.57
+ MI: 3
+ CORES: 3
+ Data in: 9
+ Data out: 18
+ Storage: 1
+ Source Mobile ID: 2
+ Can Offload: 0
+ TASK ID: 8
+
+VERTEX:
+ Cores: 4
+ MIPS: 4
+ Storage: 16
+ RAM: 8
+ Type: mobile
+ Free: 1
+ Coords: ( 2, 2)
+ Battery: 100
+ ID: 2
+
+START TIME: 11.3623
+FINISH TIME: 12.1123
+====================
+TASK: 
+ Name: APP_1_Input_Layer_1
+ RAM: 3.64
+ MI: 5
+ CORES: 1
+ Data in: 20
+ Data out: 35
+ Storage: 2
+ Source Mobile ID: 2
+ Can Offload: 0
+ TASK ID: 9
+
+VERTEX:
+ Cores: 4
+ MIPS: 4
+ Storage: 16
+ RAM: 8
+ Type: mobile
+ Free: 1
+ Coords: ( 2, 2)
+ Battery: 100
+ ID: 2
+
+START TIME: 11.3623
+FINISH TIME: 12.6123
+====================
+TASK: 
+ Name: APP_1_Inner_Layer_0:1
+ RAM: 3.37
+ MI: 2
+ CORES: 3
+ Data in: 48
+ Data out: 3
+ Storage: 1
+ Source Mobile ID: 2
+ Can Offload: 0
+ TASK ID: 11
+
+VERTEX:
+ Cores: 4
+ MIPS: 4
+ Storage: 16
+ RAM: 8
+ Type: mobile
+ Free: 1
+ Coords: ( 2, 2)
+ Battery: 100
+ ID: 2
+
+START TIME: 12.6123
+FINISH TIME: 13.1123
+====================
+TASK: 
+ Name: APP_1_Inner_Layer_0:0
+ RAM: 3.3
+ MI: 6
+ CORES: 1
+ Data in: 25
+ Data out: 42
+ Storage: 3
+ Source Mobile ID: 2
+ Can Offload: 0
+ TASK ID: 10
+
+VERTEX:
+ Cores: 4
+ MIPS: 4
+ Storage: 16
+ RAM: 8
+ Type: mobile
+ Free: 1
+ Coords: ( 2, 2)
+ Battery: 100
+ ID: 2
+
+START TIME: 12.1123
+FINISH TIME: 13.6123
+====================
+TASK: 
+ Name: APP_0_Output_Layer_0
+ RAM: 3.31
+ MI: 8
+ CORES: 1
+ Data in: 49
+ Data out: 29
+ Storage: 1
+ Source Mobile ID: 2
+ Can Offload: 0
+ TASK ID: 7
+
+VERTEX:
+ Cores: 4
+ MIPS: 4
+ Storage: 16
+ RAM: 8
+ Type: mobile
+ Free: 1
+ Coords: ( 2, 2)
+ Battery: 100
+ ID: 2
+
+START TIME: 13.1123
+FINISH TIME: 15.1123
+====================
+TASK: 
+ Name: APP_1_Inner_Layer_1:2
+ RAM: 1
+ MI: 9
+ CORES: 1
+ Data in: 9
+ Data out: 7
+ Storage: 2
+ Source Mobile ID: 2
+ Can Offload: 0
+ TASK ID: 14
+
+VERTEX:
+ Cores: 4
+ MIPS: 4
+ Storage: 16
+ RAM: 8
+ Type: mobile
+ Free: 1
+ Coords: ( 2, 2)
+ Battery: 100
+ ID: 2
+
+START TIME: 13.1123
+FINISH TIME: 15.3623
+====================
+TASK: 
+ Name: APP_1_Inner_Layer_1:1
+ RAM: 1.84
+ MI: 9
+ CORES: 1
+ Data in: 8
+ Data out: 37
+ Storage: 2
+ Source Mobile ID: 2
+ Can Offload: 0
+ TASK ID: 13
+
+VERTEX:
+ Cores: 4
+ MIPS: 4
+ Storage: 16
+ RAM: 8
+ Type: mobile
+ Free: 1
+ Coords: ( 2, 2)
+ Battery: 100
+ ID: 2
+
+START TIME: 13.6123
+FINISH TIME: 15.8623
+====================
+TASK: 
+ Name: APP_1_Inner_Layer_1:0
+ RAM: 1.17
+ MI: 4
+ CORES: 3
+ Data in: 42
+ Data out: 39
+ Storage: 1
+ Source Mobile ID: 2
+ Can Offload: 0
+ TASK ID: 12
+
+VERTEX:
+ Cores: 4
+ MIPS: 4
+ Storage: 16
+ RAM: 8
+ Type: mobile
+ Free: 1
+ Coords: ( 2, 2)
+ Battery: 100
+ ID: 2
+
+START TIME: 15.3623
+FINISH TIME: 16.3623
+====================
+TASK: 
+ Name: APP_1_Output_Layer_1
+ RAM: 2.08
+ MI: 1
+ CORES: 1
+ Data in: 12
+ Data out: 44
+ Storage: 3
+ Source Mobile ID: 2
+ Can Offload: 0
+ TASK ID: 16
+
+VERTEX:
+ Cores: 4
+ MIPS: 4
+ Storage: 16
+ RAM: 8
+ Type: mobile
+ Free: 1
+ Coords: ( 2, 2)
+ Battery: 100
+ ID: 2
+
+START TIME: 16.3623
+FINISH TIME: 16.6123
+====================
+TASK: 
+ Name: APP_1_Output_Layer_0
+ RAM: 1.1
+ MI: 7
+ CORES: 2
+ Data in: 42
+ Data out: 32
+ Storage: 2
+ Source Mobile ID: 2
+ Can Offload: 0
+ TASK ID: 15
+
+VERTEX:
+ Cores: 4
+ MIPS: 4
+ Storage: 16
+ RAM: 8
+ Type: mobile
+ Free: 1
+ Coords: ( 2, 2)
+ Battery: 100
+ ID: 2
+
+START TIME: 16.3623
+FINISH TIME: 18.1123
