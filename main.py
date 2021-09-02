@@ -2,7 +2,7 @@ import json
 import os
 
 
-def main(input_directory):
+def main(input_directory, algorithm):
     first_level_subdirectory = [
         f.name for f in os.scandir(input_directory) if f.is_dir()]
     first_level_subdirectory.sort(key=lambda x: int(x))
@@ -26,16 +26,17 @@ def main(input_directory):
             group_results[subdirectory] = result
         root_results[directory] = group_results
 
-    generate_meta_analysis(root_results, input_directory)
+    generate_meta_analysis(root_results, input_directory, algorithm)
     return
 
 
-def generate_meta_analysis(root_results, input_directory):
+def generate_meta_analysis(root_results, input_directory, algorithm):
     meta_values = {}
     for key, value in root_results.items():
         time_percentage = 0
         completed_application_rate = 0
         tasks_completion_rate = 0
+        meta_values[key]['raw_data'] = []
         for instance in value.values():
             time_percentage = time_percentage + \
                 (instance['time_ratio'][0] / instance['time_ratio'][1])
@@ -44,7 +45,7 @@ def generate_meta_analysis(root_results, input_directory):
                  instance['completed_application_ratio'][1])
             tasks_completion_rate = tasks_completion_rate + \
                 (instance['task_completed'][0] / instance['task_completed'][1])
-            continue
+            meta_values[key]['raw_data'].append(instance)
         instance_count = len(value.keys())
 
         time_percentage = time_percentage / instance_count
@@ -60,10 +61,10 @@ def generate_meta_analysis(root_results, input_directory):
     for key, items in meta_values.items():
         output_str = output_str + f"{key}\nTime Percentage: {items['time_percentage']}\nAverage Task Completion: {items['tasks_completion_rate']}\nAverage Application Completion Percentage: {items['completed_application_rate']}\n\n"
     
-    with open(f"{input_directory}/output_file", "w") as f:
+    with open(f"{input_directory}/{algorithm}_output_file", "w") as f:
         f.write(output_str)
 
-    with open(f"{input_directory}/output_json.json", "w") as f:
+    with open(f"{input_directory}/{algorithm}_output_json.json", "w") as f:
         f.write(json.dumps(meta_values, indent = 4) )
     return
 
@@ -502,4 +503,4 @@ if __name__ == "__main__":
     first_level_subdirectory = [f.name for f in os.scandir(input_directory) if f.is_dir()]
 
     for directory in first_level_subdirectory:
-        main(f"{input_directory}/{directory}")
+        main(f"{input_directory}/{directory}", directory)
