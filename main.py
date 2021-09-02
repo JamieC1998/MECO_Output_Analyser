@@ -1,12 +1,35 @@
 import json
-
+import os
 
 def main():
-    input_lines = read_file("input.txt")
+    input_directory = "./input_dir"
+    first_level_subdirectory = [f.name for f in os.scandir(input_directory) if f.is_dir()]
+    first_level_subdirectory.sort(key=lambda x: int(x))
+
+    root_results = {}
+    for directory in first_level_subdirectory:
+        second_level_directory_path = f"{input_directory}/{directory}"
+        second_level_directories = [f.name for f in os.scandir(second_level_directory_path) if f.is_dir()]
+        second_level_directories.sort(key=lambda x: int(x))
+
+        group_results = {}
+        
+        for subdirectory in second_level_directories:
+            subdirectory_path = f"{second_level_directory_path}/{subdirectory}"
+            simulator_results = f"{subdirectory_path}/algorithm_output_{directory}_{subdirectory}"
+            application_topology = f"{subdirectory_path}/application_topology_batch_{directory}_{subdirectory}"
+            result = generate_result(application_topology, simulator_results)
+            group_results[subdirectory] = result
+        root_results[directory] = group_results
+    a = 'a'
+    return
+
+def generate_result(input_file, output_file):
+    input_lines = read_file(input_file)
 
     # output_lines = read_file("output.txt")
     # output_lines = read_file("min_mobile_prior_output.txt")
-    output_lines = read_file("min_run_time_output.txt")
+    output_lines = read_file(output_file)
 
     total_time = float(input_lines[0])
     number_of_applications = int(input_lines[1])
@@ -17,27 +40,37 @@ def main():
     output_application_list = convert_output_to_json(
         output_lines[3:len(output_lines)])
 
-    generate_analysis(total_time, input_application_list,
+    results_dict = generate_analysis(total_time, input_application_list,
                       output_application_list)
-    return
+    return results_dict
 
 
 def generate_analysis(total_time, input_list, output_list):
+    results_dict = dict()
+
     total_task_count = 0
     completed_tasks = len(output_list)
     for application in input_list:
         total_task_count = total_task_count + application['task_count']
 
     print(f'Time Window: {total_time}')
-    print(f'Finish Time: {finish_time(output_list)}')
+    completion_time = finish_time(output_list)
+    print(f'Finish Time: {completion_time}')
 
-    completed_application_values = applications_completed(
+    results_dict['time_ratio'] = [completion_time, total_time]
+
+    completed_application_count = applications_completed(
         input_list, output_list)
+    
+    results_dict['completed_application_ratio'] = [completed_application_count, len(input_list)]
     print(f'{completed_tasks}/{total_task_count} tasks completed')
+
+    results_dict['task_completed'] = [completed_tasks, total_task_count]
 
     finish_time_per_application(input_list, output_list)
 
     nodes = applications_per_node(input_list, output_list)
+
     nodes = highest_concurrent_task_per_node(nodes, output_list, input_list)
     overlapping_tasks_by_task(nodes, output_list, input_list)
     nodes = average_task_per_node(nodes)
@@ -45,7 +78,7 @@ def generate_analysis(total_time, input_list, output_list):
     nodes = shortest_task_per_node(nodes)
     longest_task_per_application(input_list, output_list)
     shortest_task_per_application(input_list, output_list)
-    return
+    return results_dict
 
 
 def finish_time(output_list):
@@ -90,7 +123,8 @@ def shortest_task_per_application(input_list, output_list):
     print("")
     for i in range(0, len(shortest_tasks)):
         task = shortest_tasks[i]
-        print(f"Shortest Task for App: {i}\t{task['task']['name']}\tStart Time: {task['start_time']}\tFinish Time: {task['finish_time']}\tNode: {task['vertex']['id']}")
+        if task:
+            print(f"Shortest Task for App: {i}\t{task['task']['name']}\tStart Time: {task['start_time']}\tFinish Time: {task['finish_time']}\tNode: {task['vertex']['id']}")
     return
 
 
@@ -111,7 +145,8 @@ def longest_task_per_application(input_list, output_list):
     print("")
     for i in range(0, len(longest_tasks)):
         task = longest_tasks[i]
-        print(f"Longest Task for App: {i}\t\t{task['task']['name']}\tStart Time: {task['start_time']}\tFinish Time: {task['finish_time']}\tNode: {task['vertex']['id']}")
+        if task:
+            print(f"Longest Task for App: {i}\t\t{task['task']['name']}\tStart Time: {task['start_time']}\tFinish Time: {task['finish_time']}\tNode: {task['vertex']['id']}")
     return
 
 
@@ -316,7 +351,7 @@ def applications_completed(input_list, output_list):
             completed_application_count = completed_application_count + 1
 
     print(f'{completed_application_count}/{total_application_count} applications completed')
-    return applications_completed_values
+    return completed_application_count
 
 
 def convert_output_to_json(output_lines):

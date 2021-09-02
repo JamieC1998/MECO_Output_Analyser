@@ -28,7 +28,9 @@ share/python-wheels/
 MANIFEST]
 .DS_Store
 FirstHopMobileOffloading
+preallocation_algorithm
 input_gen.py
+input_dir/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
