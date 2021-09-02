@@ -29,6 +29,9 @@ MANIFEST]
 .DS_Store
 FirstHopMobileOffloading
 preallocation_algorithm
+min_runtime_mobile_priority
+min_app_time
+scripts/*
 input_gen.py
 input_dir/
 

@@ -1,28 +1,72 @@
 import json
 import os
 
-def main():
-    input_directory = "./input_dir"
-    first_level_subdirectory = [f.name for f in os.scandir(input_directory) if f.is_dir()]
+
+def main(input_directory):
+    first_level_subdirectory = [
+        f.name for f in os.scandir(input_directory) if f.is_dir()]
     first_level_subdirectory.sort(key=lambda x: int(x))
 
     root_results = {}
     for directory in first_level_subdirectory:
         second_level_directory_path = f"{input_directory}/{directory}"
-        second_level_directories = [f.name for f in os.scandir(second_level_directory_path) if f.is_dir()]
+        second_level_directories = [f.name for f in os.scandir(
+            second_level_directory_path) if f.is_dir()]
         second_level_directories.sort(key=lambda x: int(x))
 
         group_results = {}
-        
+
         for subdirectory in second_level_directories:
+            if directory == '1' and subdirectory == '3':
+                a = 'a'
             subdirectory_path = f"{second_level_directory_path}/{subdirectory}"
             simulator_results = f"{subdirectory_path}/algorithm_output_{directory}_{subdirectory}"
             application_topology = f"{subdirectory_path}/application_topology_batch_{directory}_{subdirectory}"
             result = generate_result(application_topology, simulator_results)
             group_results[subdirectory] = result
         root_results[directory] = group_results
-    a = 'a'
+
+    generate_meta_analysis(root_results, input_directory)
     return
+
+
+def generate_meta_analysis(root_results, input_directory):
+    meta_values = {}
+    for key, value in root_results.items():
+        time_percentage = 0
+        completed_application_rate = 0
+        tasks_completion_rate = 0
+        for instance in value.values():
+            time_percentage = time_percentage + \
+                (instance['time_ratio'][0] / instance['time_ratio'][1])
+            completed_application_rate = completed_application_rate + \
+                (instance['completed_application_ratio'][0] /
+                 instance['completed_application_ratio'][1])
+            tasks_completion_rate = tasks_completion_rate + \
+                (instance['task_completed'][0] / instance['task_completed'][1])
+            continue
+        instance_count = len(value.keys())
+
+        time_percentage = time_percentage / instance_count
+        completed_application_rate = completed_application_rate / instance_count
+        tasks_completion_rate = tasks_completion_rate / instance_count
+        meta_values[key] = {
+            'time_percentage': time_percentage,
+            'tasks_completion_rate': tasks_completion_rate,
+            'completed_application_rate': completed_application_rate
+        }
+
+    output_str = ""
+    for key, items in meta_values.items():
+        output_str = output_str + f"{key}\nTime Percentage: {items['time_percentage']}\nAverage Task Completion: {items['tasks_completion_rate']}\nAverage Application Completion Percentage: {items['completed_application_rate']}\n\n"
+    
+    with open(f"{input_directory}/output_file", "w") as f:
+        f.write(output_str)
+
+    with open(f"{input_directory}/output_json.json", "w") as f:
+        f.write(json.dumps(meta_values, indent = 4) )
+    return
+
 
 def generate_result(input_file, output_file):
     input_lines = read_file(input_file)
@@ -41,7 +85,7 @@ def generate_result(input_file, output_file):
         output_lines[3:len(output_lines)])
 
     results_dict = generate_analysis(total_time, input_application_list,
-                      output_application_list)
+                                     output_application_list)
     return results_dict
 
 
@@ -53,17 +97,20 @@ def generate_analysis(total_time, input_list, output_list):
     for application in input_list:
         total_task_count = total_task_count + application['task_count']
 
-    print(f'Time Window: {total_time}')
+    # print(f'Time Window: {total_time}')
     completion_time = finish_time(output_list)
-    print(f'Finish Time: {completion_time}')
+    if len(output_list) == 0:
+        completion_time = total_time
+    # print(f'Finish Time: {completion_time}')
 
     results_dict['time_ratio'] = [completion_time, total_time]
 
     completed_application_count = applications_completed(
         input_list, output_list)
-    
-    results_dict['completed_application_ratio'] = [completed_application_count, len(input_list)]
-    print(f'{completed_tasks}/{total_task_count} tasks completed')
+
+    results_dict['completed_application_ratio'] = [
+        completed_application_count, len(input_list)]
+    # print(f'{completed_tasks}/{total_task_count} tasks completed')
 
     results_dict['task_completed'] = [completed_tasks, total_task_count]
 
@@ -100,9 +147,9 @@ def finish_time_per_application(input_list, output_list):
                         finish_time = allocation['finish_time']
         finish_times.append(finish_time)
 
-    print("")
-    for i in range(0, len(finish_times)):
-        print(f"Application {i} finish time: {finish_times[i]}")
+    # print("")
+    # for i in range(0, len(finish_times)):
+    #     print(f"Application {i} finish time: {finish_times[i]}")
     return
 
 
@@ -114,17 +161,18 @@ def shortest_task_per_application(input_list, output_list):
         for task_a in input_list[i]['tasks']:
             for allocation in output_list:
                 if task_a['name'] == allocation['task']['name']:
-                    duration = allocation['finish_time'] - allocation['start_time']
+                    duration = allocation['finish_time'] - \
+                        allocation['start_time']
                     if duration < shortest_task_duration:
                         shortest_task = allocation
                         shortest_task_duration = duration
         shortest_tasks.append(shortest_task)
 
-    print("")
-    for i in range(0, len(shortest_tasks)):
-        task = shortest_tasks[i]
-        if task:
-            print(f"Shortest Task for App: {i}\t{task['task']['name']}\tStart Time: {task['start_time']}\tFinish Time: {task['finish_time']}\tNode: {task['vertex']['id']}")
+    # print("")
+    # for i in range(0, len(shortest_tasks)):
+    #     task = shortest_tasks[i]
+    #     if task:
+    #         print(f"Shortest Task for App: {i}\t{task['task']['name']}\tStart Time: {task['start_time']}\tFinish Time: {task['finish_time']}\tNode: {task['vertex']['id']}")
     return
 
 
@@ -136,17 +184,18 @@ def longest_task_per_application(input_list, output_list):
         for task_a in input_list[i]['tasks']:
             for allocation in output_list:
                 if task_a['name'] == allocation['task']['name']:
-                    duration = allocation['finish_time'] - allocation['start_time']
+                    duration = allocation['finish_time'] - \
+                        allocation['start_time']
                     if duration > longest_task_duration:
                         longest_task = allocation
                         longest_task_duration = duration
         longest_tasks.append(longest_task)
 
-    print("")
-    for i in range(0, len(longest_tasks)):
-        task = longest_tasks[i]
-        if task:
-            print(f"Longest Task for App: {i}\t\t{task['task']['name']}\tStart Time: {task['start_time']}\tFinish Time: {task['finish_time']}\tNode: {task['vertex']['id']}")
+    # print("")
+    # for i in range(0, len(longest_tasks)):
+    #     task = longest_tasks[i]
+    #     if task:
+    #         print(f"Longest Task for App: {i}\t\t{task['task']['name']}\tStart Time: {task['start_time']}\tFinish Time: {task['finish_time']}\tNode: {task['vertex']['id']}")
     return
 
 
@@ -154,19 +203,19 @@ def shortest_task_per_node(nodes):
     for key in nodes.keys():
         shortest_task = {}
         shortest_duration = float('inf')
-        
+
         for task in nodes[key]['tasks']:
             duration = task['finish_time'] - task['start_time']
             if shortest_duration > duration:
                 shortest_task = task
                 shortest_duration = duration
         nodes[key]['shortest_task'] = shortest_task
-    
-    print("")
-    for node in nodes.values():
-        shortest_task = node['shortest_task']
-        print(f"Shortest Task on Node: {node['id']}\t{shortest_task['task']['name']}\tStart Time: {shortest_task['start_time']}\tFinish Time: {shortest_task['finish_time']}")
-    
+
+    # print("")
+    # for node in nodes.values():
+    #     shortest_task = node['shortest_task']
+    #     print(f"Shortest Task on Node: {node['id']}\t{shortest_task['task']['name']}\tStart Time: {shortest_task['start_time']}\tFinish Time: {shortest_task['finish_time']}")
+
     return nodes
 
 
@@ -174,18 +223,18 @@ def longest_task_per_node(nodes):
     for key in nodes.keys():
         longest_task = {}
         longest_duration = 0
-        
+
         for task in nodes[key]['tasks']:
             duration = task['finish_time'] - task['start_time']
             if longest_duration < duration:
                 longest_task = task
                 longest_duration = duration
         nodes[key]['longest_task'] = longest_task
-    
-    print("")
-    for node in nodes.values():
-        longest_task = node['longest_task']
-        print(f"Longest Task on Node: {node['id']}\t\t{longest_task['task']['name']}\tStart Time: {longest_task['start_time']}\tFinish Time: {longest_task['finish_time']}")
+
+    # print("")
+    # for node in nodes.values():
+    #     longest_task = node['longest_task']
+    #     print(f"Longest Task on Node: {node['id']}\t\t{longest_task['task']['name']}\tStart Time: {longest_task['start_time']}\tFinish Time: {longest_task['finish_time']}")
     return nodes
 
 
@@ -217,20 +266,21 @@ def average_task_per_node(nodes):
             'duration': duration
         }
 
-    for node in nodes.values():
-        task = node['average_task']
-        print(f'Average Task for Node: {node["id"]}\tCores: {task["cores"]}\tMI: {task["mips"]} \tStorage: {round(task["storage"], 3)}\tRAM: {round(task["ram"], 2)}\tDuration: {task["duration"]}')
-    
+    # for node in nodes.values():
+    #     task = node['average_task']
+    #     print(f'Average Task for Node: {node["id"]}\tCores: {task["cores"]}\tMI: {task["mips"]} \tStorage: {round(task["storage"], 3)}\tRAM: {round(task["ram"], 2)}\tDuration: {task["duration"]}')
+
     return nodes
 
+
 def overlapping_tasks_by_task(nodes, output_list, input_list):
-    print("\nOverlapping tasks:")
-    for node in nodes.values():
-        for task in node['tasks']:
-            print(f'\t{task["task"]["name"]}\tStart Time: {task["start_time"]}\tFinish Time: {task["finish_time"]}')
-            for item in task['task']['overlapping_tasks']:
-                print(f'\t\t{item["task"]["name"]}\tStart Time: {item["start_time"]}\tFinish Time: {item["finish_time"]}')
-            print("")
+    # print("\nOverlapping tasks:")
+    # for node in nodes.values():
+    #     for task in node['tasks']:
+    #         print(f'\t{task["task"]["name"]}\tStart Time: {task["start_time"]}\tFinish Time: {task["finish_time"]}')
+    #         for item in task['task']['overlapping_tasks']:
+    #             print(f'\t\t{item["task"]["name"]}\tStart Time: {item["start_time"]}\tFinish Time: {item["finish_time"]}')
+    #         print("")
     return
 
 
@@ -245,7 +295,8 @@ def highest_concurrent_task_per_node(nodes, output_list, input_list):
                 compare_task = node['tasks'][x]
 
                 if current_task['start_time'] <= compare_task['finish_time'] and compare_task['start_time'] <= current_task['finish_time']:
-                    node['tasks'][i]['task']['overlapping_tasks'].append(node['tasks'][x])
+                    node['tasks'][i]['task']['overlapping_tasks'].append(
+                        node['tasks'][x])
 
     # for key in nodes.keys():
     #     for x in range(0, len(nodes[key]['tasks'])):
@@ -287,7 +338,8 @@ def calculate_highest_parrallel_tasks(task):
                     start_time = start_time_a
                     finish_time = finish_time_a
 
-                    names = overlapping_windows[i][0].union(overlapping_windows[x][0])
+                    names = overlapping_windows[i][0].union(
+                        overlapping_windows[x][0])
 
                     if(start_time_b > start_time):
                         start_time = start_time_b
@@ -327,9 +379,9 @@ def applications_per_node(input_list, output_list):
             'task': temp_task
         })
 
-    print("")
-    for node in nodes.values():
-        print(f"Node: {node['id']} \tType: {node['type']} \tTotal tasks processed: {node['task_count']}")
+    # print("")
+    # for node in nodes.values():
+    #     print(f"Node: {node['id']} \tType: {node['type']} \tTotal tasks processed: {node['task_count']}")
     return nodes
 
 
@@ -350,7 +402,7 @@ def applications_completed(input_list, output_list):
         if values:
             completed_application_count = completed_application_count + 1
 
-    print(f'{completed_application_count}/{total_application_count} applications completed')
+    # print(f'{completed_application_count}/{total_application_count} applications completed')
     return completed_application_count
 
 
@@ -366,6 +418,9 @@ def convert_output_to_json(output_lines):
     task_mappings = []
 
     for item in raw_mappings:
+        if len(item) == 0:
+            continue
+
         allocation = {}
         task = {}
         vertex = {}
@@ -443,4 +498,8 @@ def read_file(filename):
 
 
 if __name__ == "__main__":
-    main()
+    input_directory = "./input_dir"
+    first_level_subdirectory = [f.name for f in os.scandir(input_directory) if f.is_dir()]
+
+    for directory in first_level_subdirectory:
+        main(f"{input_directory}/{directory}")
