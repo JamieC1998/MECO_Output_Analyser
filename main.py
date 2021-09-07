@@ -36,6 +36,8 @@ def generate_meta_analysis(root_results, input_directory, algorithm):
         time_percentage = 0
         completed_application_rate = 0
         tasks_completion_rate = 0
+        
+        meta_values[key] = {}
         meta_values[key]['raw_data'] = []
         for instance in value.values():
             time_percentage = time_percentage + \
