@@ -1,8 +1,11 @@
 import json
 import os
+import numpy as np
+import matplotlib.pyplot as plt
 
+output_folder = "./outputs"
 
-def main(input_directory, algorithm):
+def generate_meta_values(input_directory, algorithm, algorithm_top):
     first_level_subdirectory = [
         f.name for f in os.scandir(input_directory) if f.is_dir()]
     first_level_subdirectory.sort(key=lambda x: int(x))
@@ -17,17 +20,102 @@ def main(input_directory, algorithm):
         group_results = {}
 
         for subdirectory in second_level_directories:
-            if directory == '1' and subdirectory == '3':
-                a = 'a'
             subdirectory_path = f"{second_level_directory_path}/{subdirectory}"
             simulator_results = f"{subdirectory_path}/algorithm_output_{directory}_{subdirectory}"
-            application_topology = f"{subdirectory_path}/application_topology_batch_{directory}_{subdirectory}"
+            application_topology = f"{algorithm_top}/{directory}/application_topology_batch_{directory}_{subdirectory}"
             result = generate_result(application_topology, simulator_results)
             group_results[subdirectory] = result
         root_results[directory] = group_results
 
-    generate_meta_analysis(root_results, input_directory, algorithm)
+    return generate_meta_analysis(root_results, input_directory, algorithm)
+
+
+def generate_graphs(algorithm_meta_values):
+    graph_time_taken(algorithm_meta_values)
+    graph_task_completion(algorithm_meta_values)
+    graph_applications_completion(algorithm_meta_values)
     return
+
+
+def graph_task_completion(algorithm_meta_values):
+    #Getting a list of time values
+    width_val = 0.25
+    fig, ax = plt.subplots()
+    
+    x_pos = []
+    for algorithm, meta_values in algorithm_meta_values.items():
+        task_completion_list = [np.array([instance['task_completed'][0] / instance['task_completed'][1] for instance in items['raw_data'].values()]) for items in meta_values.values()]
+        task_completion_mean = [np.mean(item) for item in task_completion_list]
+        task_completion_std = [np.std(item) for item in task_completion_list]
+
+        if len(x_pos) == 0:
+            x_pos = np.arange(len(task_completion_mean))
+        else:
+            x_pos = [i+width_val for i in x_pos]
+
+        ax.bar(x_pos, task_completion_mean, yerr=task_completion_std, capsize=10, width=width_val, label=algorithm)
+        ax.set_xticks(x_pos)
+        ax.set_xticklabels([i for i in range(1, len(task_completion_std) + 1)])
+
+    ax.set_ylabel('Percentage of Tasks Completed')
+    ax.set_title(f'Mean Task completion')
+    ax.yaxis.grid(True)
+    plt.legend([key for key in algorithm_meta_values.keys()], loc=4)
+    plt.savefig(f"{output_folder}/mean_task_completion.pdf")
+
+
+def graph_applications_completion(algorithm_meta_values):
+    #Getting a list of time values
+    width_val = 0.25
+    fig, ax = plt.subplots()
+    
+    x_pos = []
+    for algorithm, meta_values in algorithm_meta_values.items():
+        application_completion_list = [np.array([instance['completed_application_ratio'][0] / instance['completed_application_ratio'][1] for instance in items['raw_data'].values()]) for items in meta_values.values()]
+        application_completion_mean = [np.mean(item) for item in application_completion_list]
+        application_completion_std = [np.std(item) for item in application_completion_list]
+
+        if len(x_pos) == 0:
+            x_pos = np.arange(len(application_completion_mean))
+        else:
+            x_pos = [i+width_val for i in x_pos]
+
+        ax.bar(x_pos, application_completion_mean, yerr=application_completion_std, capsize=10, width=width_val, label=algorithm)
+        ax.set_xticks(x_pos)
+        ax.set_xticklabels([i for i in range(1, len(application_completion_std) + 1)])
+
+    ax.set_ylabel('Percentage of Applications Completed')
+    ax.set_title(f'Mean Application completion')
+    ax.yaxis.grid(True)
+    plt.legend([key for key in algorithm_meta_values.keys()], loc=4)
+    plt.savefig(f"{output_folder}/mean_application_completion.pdf")
+
+
+def graph_time_taken(algorithm_meta_values):
+    #Getting a list of time values
+    width_val = 0.25
+    fig, ax = plt.subplots()
+    
+    x_pos = []
+    for algorithm, meta_values in algorithm_meta_values.items():
+        time_values_list = [np.array([instance['time_ratio'][0] / instance['time_ratio'][1] for instance in items['raw_data'].values()]) for items in meta_values.values()]
+        time_values_mean = [np.mean(item) for item in time_values_list]
+        time_values_std = [np.std(item) for item in time_values_list]
+
+        if len(x_pos) == 0:
+            x_pos = np.arange(len(time_values_mean))
+        else:
+            x_pos = [i+width_val for i in x_pos]
+
+        ax.bar(x_pos, time_values_mean, yerr=time_values_std, capsize=10, width=width_val, label=algorithm)
+        ax.set_xticks(x_pos)
+        ax.set_xticklabels([i for i in range(1, len(time_values_std) + 1)])
+
+    ax.set_ylabel('Time Taken as Percentage')
+    ax.set_title(f'Mean time completion')
+    ax.yaxis.grid(True)
+    plt.legend([key for key in algorithm_meta_values.keys()], loc=4)
+    plt.savefig(f"{output_folder}/mean_time_completion.pdf")
 
 
 def generate_meta_analysis(root_results, input_directory, algorithm):
@@ -36,7 +124,7 @@ def generate_meta_analysis(root_results, input_directory, algorithm):
         time_percentage = 0
         completed_application_rate = 0
         tasks_completion_rate = 0
-        
+
         meta_values[key] = {}
         meta_values[key]['raw_data'] = []
         for instance in value.values():
@@ -56,7 +144,8 @@ def generate_meta_analysis(root_results, input_directory, algorithm):
         meta_values[key] = {
             'time_percentage': time_percentage,
             'tasks_completion_rate': tasks_completion_rate,
-            'completed_application_rate': completed_application_rate
+            'completed_application_rate': completed_application_rate,
+            'raw_data': value
         }
 
     output_str = ""
@@ -68,7 +157,7 @@ def generate_meta_analysis(root_results, input_directory, algorithm):
 
     with open(f"{input_directory}/{algorithm}_output_json.json", "w") as f:
         f.write(json.dumps(meta_values, indent = 4) )
-    return
+    return meta_values
 
 
 def generate_result(input_file, output_file):
@@ -501,8 +590,15 @@ def read_file(filename):
 
 
 if __name__ == "__main__":
+    output_directory = "./output_dir"
     input_directory = "./input_dir"
-    first_level_subdirectory = [f.name for f in os.scandir(input_directory) if f.is_dir()]
+    first_level_subdirectory = [f.name for f in os.scandir(output_directory) if f.is_dir()]
 
+    if not os.path.isdir(output_folder):
+        os.mkdir(output_folder)
+
+    algorithm_meta_values = {}
     for directory in first_level_subdirectory:
-        main(f"{input_directory}/{directory}", directory)
+        algorithm_meta_values[directory] = generate_meta_values(f"{output_directory}/{directory}", directory, input_directory)
+
+    generate_graphs(algorithm_meta_values)
