@@ -7,7 +7,7 @@ temp_dir = "./input_dir"
 input_script = "./input_gen.py"
 script_folder = "./scripts"
 batch_size = 20
-application_count = 5
+application_count = 20
 
 def main():
     if not path.isdir(input_dir):
