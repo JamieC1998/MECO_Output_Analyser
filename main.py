@@ -73,7 +73,7 @@ def graph_ram_usage_per_node_type(algorithm_meta_values):
                 ax.errorbar(x_axis, y_axis_mean, yerr=y_axis_std, fmt='-o')
 
             ax.set_ylabel('Resource Use')
-            ax.set_title(f'Mean RAM Use {algo.replace("_", " ").capitalize()} for {app_batch} Applications')
+            ax.set_title(f'Weighted Sum of RAM Use {algo.replace("_", " ").capitalize()} for {app_batch} Applications')
             ax.grid(True)
             plt.legend(node_types)
             plt.savefig(f"{ram_per_node_type_algo_folder}/ram_use_{algo}_{app_batch}.pdf")
@@ -103,7 +103,7 @@ def graph_cpu_usage_per_node_type(algorithm_meta_values):
                 ax.errorbar(x_axis, y_axis_mean, yerr=y_axis_std, fmt='-o')
 
             ax.set_ylabel('Resource Use')
-            ax.set_title(f'Mean CPU Use {algo.replace("_", " ").capitalize()} for {app_batch} Applications')
+            ax.set_title(f'Weighted Sum of CPU Use {algo.replace("_", " ").capitalize()} for {app_batch} Applications')
             ax.grid(True)
             plt.legend(node_types)
             plt.savefig(f"{cpu_per_node_type_algo_folder}/cpu_use_{algo}_{app_batch}.pdf")
@@ -494,9 +494,16 @@ def resource_use_per_node_type(nodes, total_time):
             cpu = 0
             ram = 0
             for task in task_list:
-                if math.floor(task['start_time']) < i + 1 and i < math.floor(task['finish_time']):
-                    cpu = cpu + task['task']['cores']
-                    ram = ram + task['task']['ram']
+                if task['start_time'] < i + 1 and i < task['finish_time']:
+                    duration = 1
+
+                    if task['start_time'] > i:
+                        duration = duration - (task['start_time'] - i)
+                    if task['finish_time'] < i + 1:
+                        duration = duration - ((i + 1) - task['finish_time'])
+
+                    cpu = cpu + (task['task']['cores'] * duration)
+                    ram = ram + (task['task']['ram'] * duration)
 
             resource_types_summed_cores[n_type].append(cpu / node_type_total_resources[n_type]['cpu'])
             resource_types_summed_ram[n_type].append(ram / node_type_total_resources[n_type]['ram'])
