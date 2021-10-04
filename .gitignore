@@ -139,4 +139,4 @@ dmypy.json
 outputs/*
 .idea/
 
-./lower_bound_dir
+lower_bound_dir/*
