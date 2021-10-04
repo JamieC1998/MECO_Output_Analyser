@@ -3,6 +3,7 @@ import os
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+from anytree import AnyNode
 
 output_folder = "./outputs"
 node_types = ["cloud", "edge", "mobile"]
@@ -17,6 +18,7 @@ algorithm_debug_name = ""
 
 
 def generate_meta_values(input_dir, algorithm, algorithm_top):
+
     first_level = [
         f.name for f in os.scandir(input_dir) if f.is_dir()]
     first_level.sort(key=lambda x: int(x))
@@ -41,23 +43,115 @@ def generate_meta_values(input_dir, algorithm, algorithm_top):
     return generate_meta_analysis(root_results, input_dir, algorithm)
 
 
-def generate_graphs(algorithm_meta_values):
-    graph_time_taken(algorithm_meta_values)
-    graph_task_completion(algorithm_meta_values)
-    graph_applications_completion(algorithm_meta_values)
-    graph_application_completion_times_per_app_size(algorithm_meta_values)
-    graph_tasks_per_node(algorithm_meta_values)
-    graph_cpu_usage_per_node_type(algorithm_meta_values)
-    graph_ram_usage_per_node_type(algorithm_meta_values)
+def generate_graphs(algorithm_agg_values):
+    graph_time_taken(algorithm_agg_values)
+    graph_task_completion(algorithm_agg_values)
+    graph_applications_completion(algorithm_agg_values)
+    graph_application_completion_times_per_app_size(algorithm_agg_values)
+    graph_tasks_per_node(algorithm_agg_values)
+    graph_cpu_usage_per_node_type(algorithm_agg_values)
+    graph_ram_usage_per_node_type(algorithm_agg_values)
+    graph_max_ram_per_node_type(algorithm_agg_values)
+    graph_max_cpu_per_node_type(algorithm_agg_values)
     return
 
 
-def graph_ram_usage_per_node_type(algorithm_meta_values):
+def graph_max_cpu_per_node_type(algorithm_agg_values):
+    max_ram_per_node_type_folder = f"{output_folder}/max_cpu_usage_per_node_type"
+    if not os.path.isdir(max_ram_per_node_type_folder):
+        os.mkdir(max_ram_per_node_type_folder)
+
+    max_ram_per_n_t = {ky: {nt: [] for nt in node_types}
+                       for ky in algorithm_agg_values.keys()}
+
+    for algorithm_name, algorithm_agg_value in algorithm_agg_values.items():
+        for idx, instance_val in algorithm_agg_value.items():
+            for node_type_key, node_type_val in instance_val["max_cpu_per_node_type"].items():
+                max_ram_per_n_t[algorithm_name][node_type_key].append(
+                    {"mean": np.mean(node_type_val), "std": np.std(node_type_val)})
+
+    for algo_name, agg_vals in max_ram_per_n_t.items():
+        width_val = 0.25
+        fig, ax = plt.subplots()
+        x_pos = []
+
+        for node_type_name, node_type_vals in agg_vals.items():
+            ram_mean_values = [item["mean"] for item in node_type_vals]
+            ram_std_values = [item["std"] for item in node_type_vals]
+
+            if len(x_pos) == 0:
+                x_pos = np.arange(len(ram_mean_values))
+
+            else:
+                x_pos = [i + width_val for i in x_pos]
+
+            ax.bar(x_pos, ram_mean_values, yerr=ram_std_values,
+                   capsize=10, width=width_val, label=node_type_name)
+            ax.set_xticks(x_pos)
+            ax.set_xticklabels([i for i in range(1, 21)])
+        ax.set_ylabel('CPU Usage')
+        ax.set_title(
+            f'Mean CPU Usage per Node Type with {len(ram_mean_values)} Applications')
+        ax.yaxis.grid(True)
+        plt.legend([name.capitalize() for name in agg_vals.keys()], loc=1)
+        plt.savefig(
+            f"{max_ram_per_node_type_folder}/max_cpu_use_per_node_type_{algo_name}.pdf")
+        plt.close()
+
+    return
+
+
+def graph_max_ram_per_node_type(algorithm_agg_values):
+    max_ram_per_node_type_folder = f"{output_folder}/max_ram_usage_per_node_type"
+    if not os.path.isdir(max_ram_per_node_type_folder):
+        os.mkdir(max_ram_per_node_type_folder)
+
+    max_ram_per_n_t = {ky: {nt: [] for nt in node_types}
+                       for ky in algorithm_agg_values.keys()}
+
+    for algorithm_name, algorithm_agg_value in algorithm_agg_values.items():
+        for idx, instance_val in algorithm_agg_value.items():
+            for node_type_key, node_type_val in instance_val["max_ram_per_node_type"].items():
+                max_ram_per_n_t[algorithm_name][node_type_key].append(
+                    {"mean": np.mean(node_type_val), "std": np.std(node_type_val)})
+
+    for algo_name, agg_vals in max_ram_per_n_t.items():
+        width_val = 0.25
+        fig, ax = plt.subplots()
+        x_pos = []
+
+        for node_type_name, node_type_vals in agg_vals.items():
+            ram_mean_values = [item["mean"] for item in node_type_vals]
+            ram_std_values = [item["std"] for item in node_type_vals]
+
+            if len(x_pos) == 0:
+                x_pos = np.arange(len(ram_mean_values))
+
+            else:
+                x_pos = [i + width_val for i in x_pos]
+
+            ax.bar(x_pos, ram_mean_values, yerr=ram_std_values,
+                   capsize=10, width=width_val, label=node_type_name)
+            ax.set_xticks(x_pos)
+            ax.set_xticklabels([i for i in range(1, 21)])
+        ax.set_ylabel('RAM Usage')
+        ax.set_title(
+            f'Mean RAM Usage per Node Type with {len(ram_mean_values)} Applications')
+        ax.yaxis.grid(True)
+        plt.legend([name.capitalize() for name in agg_vals.keys()], loc=1)
+        plt.savefig(
+            f"{max_ram_per_node_type_folder}/max_ram_use_per_node_type_{algo_name}.pdf")
+        plt.close()
+
+    return
+
+
+def graph_ram_usage_per_node_type(algorithm_aggr_values):
     ram_per_node_type_folder = f"{output_folder}/ram_per_node_type"
     if not os.path.isdir(ram_per_node_type_folder):
         os.mkdir(ram_per_node_type_folder)
 
-    for algo, val in algorithm_meta_values.items():
+    for algo, val in algorithm_aggr_values.items():
         ram_per_node_type_algo_folder = f"{ram_per_node_type_folder}/{algo}"
         if not os.path.isdir(ram_per_node_type_algo_folder):
             os.mkdir(ram_per_node_type_algo_folder)
@@ -66,17 +160,21 @@ def graph_ram_usage_per_node_type(algorithm_meta_values):
             fig, ax = plt.subplots()
 
             for n_type, n_type_list in items['ram_use_per_node_type'].items():
-                y_axis_mean = [np.mean(percents) for percents in n_type_list.values()]
-                y_axis_std = [np.std(percents) for percents in n_type_list.values()]
+                y_axis_mean = [np.mean(percents)
+                               for percents in n_type_list.values()]
+                y_axis_std = [np.std(percents)
+                              for percents in n_type_list.values()]
                 x_axis = np.arange(len(y_axis_mean))
 
                 ax.errorbar(x_axis, y_axis_mean, yerr=y_axis_std, fmt='-o')
 
             ax.set_ylabel('Resource Use')
-            ax.set_title(f'Weighted Sum of RAM Use {algo.replace("_", " ").capitalize()} for {app_batch} Applications')
+            ax.set_title(
+                f'Weighted Sum of RAM Use {algo.replace("_", " ").capitalize()} for {app_batch} Applications')
             ax.grid(True)
             plt.legend(node_types)
-            plt.savefig(f"{ram_per_node_type_algo_folder}/ram_use_{algo}_{app_batch}.pdf")
+            plt.savefig(
+                f"{ram_per_node_type_algo_folder}/ram_use_{algo}_{app_batch}.pdf")
             plt.close()
 
     return
@@ -96,17 +194,21 @@ def graph_cpu_usage_per_node_type(algorithm_meta_values):
             fig, ax = plt.subplots()
 
             for n_type, n_type_list in items['cpu_use_per_node_type'].items():
-                y_axis_mean = [np.mean(percents) for percents in n_type_list.values()]
-                y_axis_std = [np.std(percents) for percents in n_type_list.values()]
+                y_axis_mean = [np.mean(percents)
+                               for percents in n_type_list.values()]
+                y_axis_std = [np.std(percents)
+                              for percents in n_type_list.values()]
                 x_axis = np.arange(len(y_axis_mean))
 
                 ax.errorbar(x_axis, y_axis_mean, yerr=y_axis_std, fmt='-o')
 
             ax.set_ylabel('Resource Use')
-            ax.set_title(f'Weighted Sum of CPU Use {algo.replace("_", " ").capitalize()} for {app_batch} Applications')
+            ax.set_title(
+                f'Weighted Sum of CPU Use {algo.replace("_", " ").capitalize()} for {app_batch} Applications')
             ax.grid(True)
             plt.legend(node_types)
-            plt.savefig(f"{cpu_per_node_type_algo_folder}/cpu_use_{algo}_{app_batch}.pdf")
+            plt.savefig(
+                f"{cpu_per_node_type_algo_folder}/cpu_use_{algo}_{app_batch}.pdf")
             plt.close()
 
     return
@@ -327,6 +429,15 @@ def generate_meta_analysis(root_results, input_dir, algorithm):
         tasks_completion_rate = 0
         application_finish_time = {}
         tasks_per_node = []
+
+        max_cpu_per_node_type = {
+            ky: [] for ky in node_types
+        }
+
+        max_ram_per_node_type = {
+            ky: [] for ky in node_types
+        }
+
         ram_use_per_node_type = {
             res_typ: {
                 i: [] for i in range(0, int(value['1']['time_ratio'][1]))
@@ -342,7 +453,7 @@ def generate_meta_analysis(root_results, input_dir, algorithm):
         meta_values[key] = {}
         meta_values[key]['raw_data'] = []
 
-        for instance in value.values():
+        for idx, instance in value.items():
             time_percentage = time_percentage + \
                 (instance['time_ratio'][0] / instance['time_ratio'][1])
             completed_application_rate = completed_application_rate + \
@@ -360,7 +471,13 @@ def generate_meta_analysis(root_results, input_dir, algorithm):
             for n_type, perc in instance['ram_use_per_node_type'].items():
                 for index, perc_val in enumerate(perc):
                     ram_use_per_node_type[n_type][index].append(perc_val)
-            
+
+            for typ in node_types:
+                max_cpu_per_node_type[typ].append(
+                    instance["max_cpu_per_type"][typ])
+                max_ram_per_node_type[typ].append(
+                    instance["max_ram_per_type"][typ])
+
             for n_type, perc in instance['cpu_use_per_node_type'].items():
                 for index, perc_val in enumerate(perc):
                     cpu_use_per_node_type[n_type][index].append(perc_val)
@@ -381,6 +498,8 @@ def generate_meta_analysis(root_results, input_dir, algorithm):
             'tasks_per_node': tasks_per_node,
             'ram_use_per_node_type': ram_use_per_node_type,
             'cpu_use_per_node_type': cpu_use_per_node_type,
+            'max_cpu_per_node_type': max_cpu_per_node_type,
+            'max_ram_per_node_type': max_ram_per_node_type,
             'raw_data': value
         }
 
@@ -462,10 +581,33 @@ def generate_analysis(total_time, input_list, output_list):
 
     resources_per_node_type = resource_use_per_node_type(nodes, total_time)
 
+    mx_resource_use_per_node_type = max_resource_use_per_node_type(
+        resources_per_node_type, total_time)
+
     results_dict['ram_use_per_node_type'] = resources_per_node_type[0]
     results_dict['cpu_use_per_node_type'] = resources_per_node_type[1]
+    results_dict['max_cpu_per_type'] = mx_resource_use_per_node_type['max_cpu_per_type']
+    results_dict['max_ram_per_type'] = mx_resource_use_per_node_type['max_ram_per_type']
 
     return results_dict
+
+
+def max_resource_use_per_node_type(node_type_resources, total_time):
+    cpu_max_per_type = {ky: -1 for ky in node_type_resources[0].keys()}
+    ram_max_per_type = {ky: -1 for ky in node_type_resources[0].keys()}
+
+    for i in range(0, int(total_time)):
+        for ky in cpu_max_per_type.keys():
+            if node_type_resources[1][ky][i] > cpu_max_per_type[ky]:
+                cpu_max_per_type[ky] = node_type_resources[1][ky][i]
+
+            if node_type_resources[0][ky][i] > ram_max_per_type[ky]:
+                ram_max_per_type[ky] = node_type_resources[0][ky][i]
+
+    return {
+        "max_cpu_per_type": cpu_max_per_type,
+        "max_ram_per_type": ram_max_per_type
+    }
 
 
 def resource_use_per_node_type(nodes, total_time):
@@ -489,8 +631,6 @@ def resource_use_per_node_type(nodes, total_time):
 
     for i in range(0, int(total_time)):
         for n_type, task_list in resource_types.items():
-            if i == 19 and algorithm_debug_name == "preallocation_algorithm":
-                print()
             cpu = 0
             ram = 0
             for task in task_list:
@@ -505,8 +645,10 @@ def resource_use_per_node_type(nodes, total_time):
                     cpu = cpu + (task['task']['cores'] * duration)
                     ram = ram + (task['task']['ram'] * duration)
 
-            resource_types_summed_cores[n_type].append(cpu / node_type_total_resources[n_type]['cpu'])
-            resource_types_summed_ram[n_type].append(ram / node_type_total_resources[n_type]['ram'])
+            resource_types_summed_cores[n_type].append(
+                cpu / node_type_total_resources[n_type]['cpu'])
+            resource_types_summed_ram[n_type].append(
+                ram / node_type_total_resources[n_type]['ram'])
 
     return [resource_types_summed_ram, resource_types_summed_cores]
 
@@ -892,6 +1034,8 @@ if __name__ == "__main__":
 
     algorithm_meta_values = {}
     for directory in first_level_subdirectory:
+        if directory.startswith('.'):   # to ignore any hidden file
+            continue
         algorithm_debug_name = directory
         algorithm_meta_values[directory] = generate_meta_values(f"{output_directory}/{directory}", directory,
                                                                 input_directory)
