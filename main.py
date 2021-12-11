@@ -1,31 +1,37 @@
 import json
 import os
 import numpy as np
-import math
 import matplotlib.pyplot as plt
-from anytree import AnyNode
+from numpy.core.fromnumeric import std
+import sys
 
 output_folder = "./outputs"
+lower_bound_dir = "./lower_bound_dir"
 node_types = ["cloud", "edge", "mobile"]
 
-topology = [{"cpu": 4, "ram": 128, "type": 'cloud'},
-            {"cpu": 1, "ram": 8, "type": "edge"},
-            {"cpu": 4, "ram": 8, "type": "mobile"},
-            {"cpu": 4, "ram": 128, "type": 'cloud'},
-            {"cpu": 4, "ram": 128, "type": 'cloud'}]
+topology = [{"cpu": 4, "ram": 8, "type": 'mobile'},
+            {"cpu": 16, "ram": 64, "type": "edge"},
+            {"cpu": sys.maxsize, "ram": sys.maxsize, "type": "cloud"},
+            {"cpu": 16, "ram": 64, "type": 'edge'},
+            {"cpu": 16, "ram": 64, "type": 'edge'}]
 
 algorithm_debug_name = ""
+debug_app_set_size = 0
+debug_instance_count = 0
 
 
-def generate_meta_values(input_dir, algorithm, algorithm_top):
+def generate_meta_values(input_dir, algorithm, algorithm_top, lower_bound_values):
+    global debug_app_set_size
+    global debug_instance_count
 
     first_level = [
         f.name for f in os.scandir(input_dir) if f.is_dir()]
     first_level.sort(key=lambda x: int(x))
 
     root_results = {}
-    for dir in first_level:
-        second_level_directory_path = f"{input_dir}/{dir}"
+    for directory in first_level:
+        debug_app_set_size = directory
+        second_level_directory_path = f"{input_dir}/{directory}"
         second_level_directories = [f.name for f in os.scandir(
             second_level_directory_path) if f.is_dir()]
         second_level_directories.sort(key=lambda x: int(x))
@@ -33,14 +39,34 @@ def generate_meta_values(input_dir, algorithm, algorithm_top):
         group_results = {}
 
         for subdirectory in second_level_directories:
+            debug_instance_count = subdirectory
             subdirectory_path = f"{second_level_directory_path}/{subdirectory}"
-            simulator_results = f"{subdirectory_path}/algorithm_output_{dir}_{subdirectory}"
-            application_topology = f"{algorithm_top}/{dir}/application_topology_batch_{dir}_{subdirectory}"
-            result = generate_result(application_topology, simulator_results)
+            simulator_results = f"{subdirectory_path}/algorithm_output_{directory}_{subdirectory}"
+            application_topology = f"{algorithm_top}/{directory}/application_topology_batch_{directory}_{subdirectory}"
+            result = generate_result(
+                application_topology, simulator_results, lower_bound_values[directory][subdirectory])
             group_results[subdirectory] = result
-        root_results[dir] = group_results
+        root_results[directory] = group_results
 
     return generate_meta_analysis(root_results, input_dir, algorithm)
+
+
+def read_lower_bound_vals(l_b_dir):
+    res = {}
+
+    first_level_dir = [f.name for f in os.scandir(
+        l_b_dir) if f.is_dir() and not f.name.startswith(".")]
+
+    for fst_dir in first_level_dir:
+        res[fst_dir] = {}
+        nested_folder = f"{l_b_dir}/{fst_dir}"
+        lb_vals = sorted([f.name for f in os.scandir(nested_folder) if f.is_file(
+        ) and not f.name.startswith(".")], key=lambda x: int(x.split("_")[4]))
+        for i, item in enumerate(lb_vals):
+            with open(f"{nested_folder}/{item}", 'r') as f:
+                res[fst_dir][str(
+                    i + 1)] = list(map(lambda x: float(x.strip("\n")), f.readlines()))
+    return res
 
 
 def generate_graphs(algorithm_agg_values):
@@ -53,6 +79,148 @@ def generate_graphs(algorithm_agg_values):
     graph_ram_usage_per_node_type(algorithm_agg_values)
     graph_max_ram_per_node_type(algorithm_agg_values)
     graph_max_cpu_per_node_type(algorithm_agg_values)
+    graph_aggregated_normalised_completion_times_by_app(algorithm_agg_values)
+    graph_stacked_tasks_completed_per_node_type(algorithm_agg_values)
+    return
+
+
+def graph_stacked_tasks_completed_per_node_type(algorithm_agg_values):
+    task_node_meta_value = {ky: {} for ky in algorithm_agg_values.keys()}
+
+    for algo, vals in algorithm_agg_values.items():
+        for ky, vl in vals.items():
+            task_node_meta_value[algo][ky] = vl['tasks_completed_per_node_type']
+    
+    fig, ax = plt.subplots()
+    ntypes = sorted(node_types, key=lambda x: x == "mobile", reverse=True)
+
+    x_pos = []
+    width_val = 0.25
+    for algo, val in task_node_meta_value.items():
+        if len(x_pos) == 0:
+            x_pos = np.arange(len(val))
+        else:
+            x_pos = [i + width_val for i in x_pos]
+        y_values = []
+        counter = 0
+        algo_name = algo.replace("_algorithm", "")
+        algo_name = algo_name.replace("_", " ")
+        for nt in ntypes:
+            new_values = [np.mean(item[nt]) for ky, item in val.items()]
+            if counter == 0:
+                y_values = new_values
+                ax.bar(x_pos, new_values, width=width_val, label=f"{algo_name} {nt}") 
+            elif counter == 1:
+                ax.bar(x_pos, new_values, bottom=y_values,width=width_val, label=f"{algo_name} {nt}")
+                y_values = [ y_values[i] + new_values[i] for i in range(0, len(y_values))]
+            else:
+                ax.bar(x_pos, new_values, bottom=y_values,width=width_val, label=f"{algo_name} {nt}")
+                y_values = [ y_values[i] + new_values[i] for i in range(0, len(y_values))]
+            counter = counter + 1
+
+    ax.set_ylabel('Tasks Completed per Node Type')
+
+    legends = []
+    for algo in task_node_meta_value.keys():
+        algo_name = algo.replace("_algorithm", "")
+        algo_name = algo_name.replace("_", " ")
+        for typ in ntypes:
+            legends.append(f"{algo_name} {typ}")
+    plt.legend(legends, prop={'size': 6})
+    ax.set_xticks(np.arange(len(x_pos)))
+    ax.set_xticklabels([i for i in range(1, len(x_pos) + 1)])
+    ax.set_title(
+        f'Tasks Completed per Node Type in batch of {len(x_pos)} Applications')
+    ax.yaxis.grid(True)
+    plt.savefig(f"{output_folder}/tasks_completed_per_node_type_set_size_{len(x_pos)}.pdf")
+    plt.close()
+    return
+
+
+def graph_aggregated_normalised_completion_times_by_app(algorithm_agg_values):
+    
+    normalised_app_completion_folder = f"{output_folder}/normalised_app_completion_by_set_size"
+    
+    if not os.path.isdir(normalised_app_completion_folder):
+        os.mkdir(normalised_app_completion_folder)
+
+    res = {}
+    for algorithm, algorithm_data in algorithm_agg_values.items():
+        for app_size_num, app_size_val in algorithm_data.items():
+            if app_size_num not in res:
+                res[app_size_num] = {}
+            
+            res[app_size_num][algorithm] = app_size_val['aggregated_normalised_duration_values_by_app']
+            continue
+
+    width_val = 0.25
+
+    for app_size, app_set_data in res.items():
+        fig, ax = plt.subplots()
+        x_pos = []
+        for algorithm, algorithm_results in app_set_data.items():
+            mean_vals = []
+            std_vals = []
+            for algo_val in algorithm_results.values():
+                mean_vals.append(np.mean(algo_val))
+                std_vals.append(np.std(algo_val))
+            
+            if len(x_pos) == 0:
+                x_pos = np.arange(len(mean_vals))
+            
+            else:
+                x_pos = [i + width_val for i in x_pos]
+            
+            ax.bar(x_pos, mean_vals, yerr=std_vals, capsize=0.20, width=width_val, label=algorithm) 
+            ax.set_xticks(x_pos)
+            ax.set_xticklabels([i for i in range(1, len(mean_vals) + 1)])
+            continue
+
+        ax.set_ylabel('Normalised App Duration')
+        ax.set_title(
+            f'Individual Normalised App Completion Time for batch of {len(x_pos)} Applications')
+        ax.yaxis.grid(True)
+        plt.legend(app_set_data.keys(), loc=1)
+        plt.savefig(f"{normalised_app_completion_folder}/normalised_app_completion_set_size_{app_size}.pdf")
+        plt.close()
+
+    agg_app_size_vals = {}
+
+    for app_size_key, app_set_value in res.items():
+        for algorithm_name, algorithm_results in app_set_value.items():
+            if algorithm_name not in agg_app_size_vals:
+                agg_app_size_vals[algorithm_name] = {}
+            agg_app_size_vals[algorithm_name][app_size_key] = [np.mean(res_vals) for res_vals in algorithm_results.values()]
+
+    fig, ax = plt.subplots()
+    x_pos = []
+    for algorithm, algorithm_results in agg_app_size_vals.items():
+        mean_vals = []
+        std_vals = []
+
+        for results in algorithm_results.values():
+            mean_vals.append(np.mean(results))
+            std_vals.append(np.std(results))
+        
+        if len(x_pos) == 0:
+            x_pos = np.arange(len(mean_vals))
+            
+        else:
+            x_pos = [i + width_val for i in x_pos]
+            
+        ax.bar(x_pos, mean_vals, yerr=std_vals, capsize=0.20, width=width_val, label=algorithm) 
+        ax.set_xticks(x_pos)
+        ax.set_xticklabels([i for i in range(1, len(mean_vals) + 1)])
+        
+
+    ax.set_ylabel('Normalised App Duration')
+    ax.set_title(
+        f'Mean Normalised App Completion Time across {len(x_pos)} Applications')
+    ax.yaxis.grid(True)
+    plt.legend(agg_app_size_vals.keys(), loc=1)
+    plt.savefig(f"{output_folder}/normalised_app_completion_{len(x_pos)}.pdf")
+    plt.close()
+
     return
 
 
@@ -86,9 +254,9 @@ def graph_max_cpu_per_node_type(algorithm_agg_values):
                 x_pos = [i + width_val for i in x_pos]
 
             ax.bar(x_pos, ram_mean_values, yerr=ram_std_values,
-                   capsize=10, width=width_val, label=node_type_name)
+                   capsize=0.20, width=width_val, label=node_type_name)
             ax.set_xticks(x_pos)
-            ax.set_xticklabels([i for i in range(1, 21)])
+            ax.set_xticklabels([i for i in range(1, len(ram_mean_values) + 1)])
         ax.set_ylabel('CPU Usage')
         ax.set_title(
             f'Mean CPU Usage per Node Type with {len(ram_mean_values)} Applications')
@@ -131,9 +299,9 @@ def graph_max_ram_per_node_type(algorithm_agg_values):
                 x_pos = [i + width_val for i in x_pos]
 
             ax.bar(x_pos, ram_mean_values, yerr=ram_std_values,
-                   capsize=10, width=width_val, label=node_type_name)
+                   capsize=0.20, width=width_val, label=node_type_name)
             ax.set_xticks(x_pos)
-            ax.set_xticklabels([i for i in range(1, 21)])
+            ax.set_xticklabels([i for i in range(1, len(ram_mean_values) + 1)])
         ax.set_ylabel('RAM Usage')
         ax.set_title(
             f'Mean RAM Usage per Node Type with {len(ram_mean_values)} Applications')
@@ -249,7 +417,7 @@ def graph_tasks_per_node(algo_meta_vals):
                 x_pos = [i + width_val for i in x_pos]
 
             ax.bar(x_pos, node_task_count_means, yerr=node_task_count_std,
-                   capsize=10, width=width_val, label=ky)
+                   capsize=0.20, width=width_val, label=ky)
             ax.set_xticks(x_pos)
             ax.set_xticklabels(
                 ['Cloud A', 'Edge', 'Mobile', 'Cloud B', 'Cloud C'])
@@ -300,7 +468,7 @@ def graph_application_completion_times_per_app_size(algorithm_meta_values):
                 x_pos = [i + width_val for i in x_pos]
 
             ax.bar(x_pos, application_completion_time_means,
-                   yerr=application_completion_std, capsize=10, width=width_val, label=ky)
+                   yerr=application_completion_std, capsize=0.20, width=width_val, label=ky)
             ax.set_xticks(x_pos)
             ax.set_xticklabels(
                 [i for i in range(1, len(application_completion_std) + 1)])
@@ -340,7 +508,7 @@ def graph_task_completion(algorithm_meta_val):
             x_pos = [i + width_val for i in x_pos]
 
         ax.bar(x_pos, task_completion_mean, yerr=task_completion_std,
-               capsize=10, width=width_val, label=algorithm)
+               capsize=0.20, width=width_val, label=algorithm)
         ax.set_xticks(x_pos)
         ax.set_xticklabels([i for i in range(1, len(task_completion_std) + 1)])
 
@@ -373,7 +541,7 @@ def graph_applications_completion(algorithm_meta_val):
         else:
             x_pos = [i + width_val for i in x_pos]
 
-        ax.bar(x_pos, application_completion_mean, yerr=application_completion_std, capsize=10, width=width_val,
+        ax.bar(x_pos, application_completion_mean, yerr=application_completion_std, capsize=0.20, width=width_val,
                label=algorithm.replace('_', ' ').capitalize())
         ax.set_xticks(x_pos)
         ax.set_xticklabels(
@@ -383,7 +551,7 @@ def graph_applications_completion(algorithm_meta_val):
     ax.set_title(f'Mean Application Completion')
     ax.yaxis.grid(True)
     plt.legend([key.replace('_', ' ').capitalize()
-               for key in algorithm_meta_val.keys()], loc=4)
+               for key in algorithm_meta_val.keys()], loc=1)
     plt.savefig(f"{output_folder}/mean_application_completion.pdf")
     plt.close()
 
@@ -408,7 +576,7 @@ def graph_time_taken(algorithm_meta_val):
             x_pos = [i + width_val for i in x_pos]
 
         ax.bar(x_pos, time_values_mean, yerr=time_values_std,
-               capsize=10, width=width_val, label=algorithm)
+               capsize=0.20, width=width_val, label=algorithm)
         ax.set_xticks(x_pos)
         ax.set_xticklabels([i for i in range(1, len(time_values_std) + 1)])
 
@@ -449,6 +617,15 @@ def generate_meta_analysis(root_results, input_dir, algorithm):
                 i: [] for i in range(0, int(value['1']['time_ratio'][1]))
             } for res_typ in node_types
         }
+        
+        tasks_completed_per_node_type = {
+            ky: [] for ky in node_types
+        }
+        tasks_completed_per_node_type['total'] = []
+
+        app_duration_lower_bound_norm = {
+
+        }
 
         meta_values[key] = {}
         meta_values[key]['raw_data'] = []
@@ -461,6 +638,9 @@ def generate_meta_analysis(root_results, input_dir, algorithm):
                  instance['completed_application_ratio'][1])
             tasks_completion_rate = tasks_completion_rate + \
                 (instance['task_completed'][0] / instance['task_completed'][1])
+
+            for ky, val in instance['tasks_completed_per_node_type'].items():
+                tasks_completed_per_node_type[ky].append(val)
 
             for ky, val in instance['finish_times_per_app'].items():
                 if ky not in application_finish_time:
@@ -483,12 +663,19 @@ def generate_meta_analysis(root_results, input_dir, algorithm):
                     cpu_use_per_node_type[n_type][index].append(perc_val)
 
             tasks_per_node.append(instance['tasks_per_node'])
+
+            for app_num, normalised_val in instance['normalised_app_time'].items():
+                if app_num not in app_duration_lower_bound_norm:
+                    app_duration_lower_bound_norm[app_num] = [normalised_val]
+                app_duration_lower_bound_norm[app_num].append(normalised_val)
+
             meta_values[key]['raw_data'].append(instance)
 
         instance_count = len(value.keys())
         time_percentage = time_percentage / instance_count
         completed_application_rate = completed_application_rate / instance_count
         tasks_completion_rate = tasks_completion_rate / instance_count
+
 
         meta_values[key] = {
             'time_percentage': time_percentage,
@@ -500,6 +687,8 @@ def generate_meta_analysis(root_results, input_dir, algorithm):
             'cpu_use_per_node_type': cpu_use_per_node_type,
             'max_cpu_per_node_type': max_cpu_per_node_type,
             'max_ram_per_node_type': max_ram_per_node_type,
+            'aggregated_normalised_duration_values_by_app': app_duration_lower_bound_norm,
+            'tasks_completed_per_node_type': tasks_completed_per_node_type,
             'raw_data': value
         }
 
@@ -516,7 +705,7 @@ def generate_meta_analysis(root_results, input_dir, algorithm):
     return meta_values
 
 
-def generate_result(input_file, output_file):
+def generate_result(input_file, output_file, lower_bound_values):
     input_lines = read_file(input_file)
 
     # output_lines = read_file("output.txt")
@@ -533,11 +722,11 @@ def generate_result(input_file, output_file):
         output_lines[3:len(output_lines)])
 
     results_dict = generate_analysis(total_time, input_application_list,
-                                     output_application_list)
+                                     output_application_list, lower_bound_values)
     return results_dict
 
 
-def generate_analysis(total_time, input_list, output_list):
+def generate_analysis(total_time, input_list, output_list, lower_bound_values):
     results_dict = dict()
 
     total_task_count = 0
@@ -579,10 +768,14 @@ def generate_analysis(total_time, input_list, output_list):
     results_dict['tasks_per_node'] = {**results_dict['tasks_per_node'], **{
         int(key): len(value['tasks']) for key, value in nodes.items()}}
 
+    results_dict['tasks_completed_per_node_type'] = tasks_completed_per_node_type(nodes, total_task_count)
     resources_per_node_type = resource_use_per_node_type(nodes, total_time)
 
     mx_resource_use_per_node_type = max_resource_use_per_node_type(
         resources_per_node_type, total_time)
+
+    results_dict["normalised_app_time"] = normalised_app_completion_time_to_lower_bound(
+        results_dict['finish_times_per_app'], lower_bound_values)
 
     results_dict['ram_use_per_node_type'] = resources_per_node_type[0]
     results_dict['cpu_use_per_node_type'] = resources_per_node_type[1]
@@ -590,6 +783,33 @@ def generate_analysis(total_time, input_list, output_list):
     results_dict['max_ram_per_type'] = mx_resource_use_per_node_type['max_ram_per_type']
 
     return results_dict
+
+
+def tasks_completed_per_node_type(nodes, total_task_count):
+    tasks_per_type = {ky: 0 for ky in node_types}
+
+    for node in nodes.values():
+        tasks_per_type[node["type"]] = tasks_per_type[node["type"]] + len(node['tasks'])
+    
+    res = {}
+    for ky, val in tasks_per_type.items():
+        res[ky] = val / total_task_count
+
+    total = 0
+    for val in res.values():
+        total = total + val
+    res['total'] = total
+    return res
+
+
+def normalised_app_completion_time_to_lower_bound(duration_times_per_app, lower_bound_values):
+    res = {index + 1: ((duration_times_per_app[index + 1][1] - duration_times_per_app[index + 1][0]) / value) for index, value in enumerate(lower_bound_values)}
+
+    max_val = max(res.values())
+
+    res = {k: v if v >= 0 else max_val for k, v in res.items()}
+
+    return res
 
 
 def max_resource_use_per_node_type(node_type_resources, total_time):
@@ -634,10 +854,10 @@ def resource_use_per_node_type(nodes, total_time):
             cpu = 0
             ram = 0
             for task in task_list:
-                if task['start_time'] < i + 1 and i < task['finish_time']:
+                if task['start_time'] <= i + 1 and i <= task['finish_time']:
                     duration = 1
 
-                    if task['start_time'] > i:
+                    if task['start_time'] >= i:
                         duration = duration - (task['start_time'] - i)
                     if task['finish_time'] < i + 1:
                         duration = duration - ((i + 1) - task['finish_time'])
@@ -1026,6 +1246,7 @@ def read_file(filename):
 if __name__ == "__main__":
     output_directory = "./output_dir"
     input_directory = "./input_dir"
+
     first_level_subdirectory = [
         f.name for f in os.scandir(output_directory) if f.is_dir()]
 
@@ -1033,11 +1254,13 @@ if __name__ == "__main__":
         os.mkdir(output_folder)
 
     algorithm_meta_values = {}
+    lower_bound_values = read_lower_bound_vals(lower_bound_dir)
+
     for directory in first_level_subdirectory:
         if directory.startswith('.'):   # to ignore any hidden file
             continue
         algorithm_debug_name = directory
         algorithm_meta_values[directory] = generate_meta_values(f"{output_directory}/{directory}", directory,
-                                                                input_directory)
+                                                                input_directory, lower_bound_values)
 
     generate_graphs(algorithm_meta_values)

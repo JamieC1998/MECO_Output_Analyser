@@ -9,6 +9,7 @@ lower_bound_folder = "./lower_bound_dir"
 script_folder = "./scripts"
 batch_size = 20
 application_count = 20
+regen_input = True
 
 def main():
     if not path.isdir(input_dir):
@@ -23,15 +24,16 @@ def main():
     first_level_subdirectory = [
         f.name for f in os.scandir(script_folder) if f.is_file()]
     
-    #CREATING INPUT FILES
-    for i in range(1, application_count + 1):
-        application_batch = f"{temp_dir}/{i}"
-        if not path.isdir(application_batch):
-            os.mkdir(application_batch)
+    if regen_input == True:
+        #CREATING INPUT FILES
+        for i in range(1, application_count + 1):
+            application_batch = f"{temp_dir}/{i}"
+            if not path.isdir(application_batch):
+                os.mkdir(application_batch)
 
-        for x in range(1, batch_size + 1):
-            application_topology = f"{application_batch}/application_topology_batch_{i}_{x}"
-            subprocess.call(["python3", input_script, f"{i}", application_topology])
+            for x in range(1, batch_size + 1):
+                application_topology = f"{application_batch}/application_topology_batch_{i}_{x}"
+                subprocess.call(["python3", input_script, f"{i}", application_topology])
 
 
     for algorithm in first_level_subdirectory:
