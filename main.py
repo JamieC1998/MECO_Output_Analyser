@@ -9,11 +9,11 @@ output_folder = "./outputs"
 lower_bound_dir = "./lower_bound_dir"
 node_types = ["cloud", "edge", "mobile"]
 
-topology = [{"cpu": 4, "ram": 8, "type": 'mobile'},
-            {"cpu": 16, "ram": 64, "type": "edge"},
+topology = [{"cpu": 1, "ram": 8, "type": 'mobile'},
+            {"cpu": 2 * 10, "ram": 64 * 10, "type": "edge"},
             {"cpu": sys.maxsize, "ram": sys.maxsize, "type": "cloud"},
-            {"cpu": 16, "ram": 64, "type": 'edge'},
-            {"cpu": 16, "ram": 64, "type": 'edge'}]
+            {"cpu": 2 * 10, "ram": 64 * 10, "type": 'edge'},
+            {"cpu": 2 * 10, "ram": 64 * 10, "type": 'edge'}]
 
 algorithm_debug_name = ""
 debug_app_set_size = 0
