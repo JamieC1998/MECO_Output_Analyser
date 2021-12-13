@@ -140,3 +140,7 @@ outputs/*
 .idea/
 
 lower_bound_dir/*
+templates/
+execution/
+outputs/
+output_dir/

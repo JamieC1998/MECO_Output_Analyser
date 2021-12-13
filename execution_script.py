@@ -11,6 +11,10 @@ batch_size = 20
 application_count = 20
 regen_input = True
 
+MOBILE_GPU = "ADRENO_640"
+EDGE_GPU = "RTX_3060"
+CLOUD_GPU = "RTX_3060"
+
 def main():
     if not path.isdir(input_dir):
         os.mkdir(input_dir)
@@ -33,7 +37,7 @@ def main():
 
             for x in range(1, batch_size + 1):
                 application_topology = f"{application_batch}/application_topology_batch_{i}_{x}"
-                subprocess.call(["python3", input_script, f"{i}", application_topology])
+                subprocess.call(["python3", input_script, f"{i}", application_topology, MOBILE_GPU, EDGE_GPU, CLOUD_GPU ])
 
 
     for algorithm in first_level_subdirectory:

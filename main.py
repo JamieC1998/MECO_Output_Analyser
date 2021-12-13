@@ -708,8 +708,6 @@ def generate_meta_analysis(root_results, input_dir, algorithm):
 def generate_result(input_file, output_file, lower_bound_values):
     input_lines = read_file(input_file)
 
-    # output_lines = read_file("output.txt")
-    # output_lines = read_file("min_mobile_prior_output.txt")
     output_lines = read_file(output_file)
 
     total_time = float(input_lines[0])
@@ -986,35 +984,26 @@ def longest_task_per_node(nodes):
 def average_task_per_node(nodes):
     for key in nodes.keys():
         cores = 0
-        mips = 0
         storage = 0
         ram = 0
         duration = 0
         for task in nodes[key]['tasks']:
             cores = cores + task['task']['cores']
-            mips = mips + task['task']['mi']
             ram = ram + task['task']['ram']
             storage = storage + task['task']['storage']
             duration = duration + (task['finish_time'] - task['start_time'])
         task_list_len = len(nodes[key]['tasks'])
         cores = cores / task_list_len
-        mips = mips / task_list_len
         storage = storage / task_list_len
         ram = ram / task_list_len
         duration = duration / task_list_len
 
         nodes[key]['average_task'] = {
             'cores': cores,
-            'mips': mips,
             'storage': storage,
             'ram': ram,
             'duration': duration
         }
-
-    # for node in nodes.values():
-    #     task = node['average_task']
-    #     print(f'Average Task for Node: {node["id"]}\tCores: {task["cores"]}\tMI: {task["mips"]} \tStorage: {round(task["storage"], 3)}\tRAM: {round(task["ram"], 2)}\tDuration: {task["duration"]}')
-
     return nodes
 
 
@@ -1173,29 +1162,27 @@ def convert_output_to_json(output_lines):
 
         task['name'] = item[1].split(" ")[1]
         task['ram'] = float(item[2].split(" ")[1])
-        task['mi'] = int(item[3].split(" ")[1])
-        task['cores'] = int(item[4].split(" ")[1])
-        task['data_in'] = int(item[5].split(" ")[2])
-        task['data_out'] = int(item[6].split(" ")[2])
-        task['storage'] = float(item[7].split(" ")[1])
-        task['source'] = int(item[8].split(" ")[3])
-        task['offload'] = bool(int(item[9].split(" ")[2]))
-        task['id'] = int(item[10].split(" ")[2])
+        task['cores'] = 1
+        task['data_in'] = float(item[3].split(" ")[2])
+        task['data_out'] = float(item[4].split(" ")[2])
+        task['storage'] = float(item[5].split(" ")[1])
+        task['source'] = int(item[6].split(" ")[3])
+        task['offload'] = bool(int(item[7].split(" ")[2]))
+        task['id'] = int(item[8].split(" ")[2])
 
-        vertex['cores'] = int(item[13].split(" ")[1])
-        vertex['mips'] = int(item[14].split(" ")[1])
-        vertex['storage'] = float(item[15].split(" ")[1])
-        vertex['ram'] = float(item[16].split(" ")[1])
-        vertex['type'] = item[17].split(" ")[1]
+        vertex['cores'] = int(item[11].split(" ")[1])
+        vertex['storage'] = float(item[12].split(" ")[1])
+        vertex['ram'] = float(item[13].split(" ")[1])
+        vertex['type'] = item[14].split(" ")[1]
 
         offset = 0
         if vertex['type'] == 'mobile':
             offset = 2
         elif vertex['type'] == 'edge':
             offset = 1
-        vertex['id'] = item[19 + offset].split(" ")[1]
-        start_time = item[21 + offset].split(" ")
-        finish_time = item[22 + offset].split(" ")
+        vertex['id'] = item[16 + offset].split(" ")[1]
+        start_time = item[18 + offset].split(" ")
+        finish_time = item[19 + offset].split(" ")
 
         allocation['start_time'] = float(start_time[2])
         allocation['finish_time'] = float(finish_time[2])
@@ -1221,13 +1208,15 @@ def convert_input_to_json(input_lines, number_of_applications):
             task["parents"] = list(map(lambda x: int(x), list(
                 filter(lambda y: y != '\n', input_lines[1].split(" ")))))
             task["name"] = task_raw_data[0]
-            task["mi"] = int(task_raw_data[1])
-            task["ram"] = float(task_raw_data[2])
-            task["data_in"] = int(task_raw_data[3])
-            task["data_out"] = int(task_raw_data[4])
-            task["storage"] = float(task_raw_data[5])
-            task["offload"] = bool(int(task_raw_data[6]))
-            task["cores"] = int(task_raw_data[7].replace('\n', ""))
+            task["cloud"] = float(task_raw_data[1])
+            task["edge"] = float(task_raw_data[2])
+            task["mobile"] = float(task_raw_data[3])
+            task["ram"] = float(task_raw_data[4])
+            task["data_in"] = float(task_raw_data[5])
+            task["data_out"] = float(task_raw_data[6])
+            task["storage"] = float(task_raw_data[7])
+            task["offload"] = bool(int(task_raw_data[8]))
+            task["cores"] = 1
             application_data["tasks"].append(task)
             input_lines = input_lines[2:len(input_lines)]
 
