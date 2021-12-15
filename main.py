@@ -420,7 +420,7 @@ def graph_tasks_per_node(algo_meta_vals):
                    capsize=0.20, width=width_val, label=ky)
             ax.set_xticks(x_pos)
             ax.set_xticklabels(
-                ['Cloud A', 'Edge', 'Mobile', 'Cloud B', 'Cloud C'])
+                ['Cloud', 'Edge A', 'Mobile', 'Edge B', 'Edge C'])
 
         ax.set_ylabel('Tasks Completed')
         ax.set_title(f'Mean Tasks Completed per Node with {key} Applications')
