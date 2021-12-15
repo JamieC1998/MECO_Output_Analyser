@@ -10,6 +10,7 @@ script_folder = "./scripts"
 batch_size = 20
 application_count = 20
 regen_input = True
+run_sim = False
 
 MOBILE_GPU = "ADRENO_640"
 EDGE_GPU = "RTX_3060"
@@ -39,17 +40,17 @@ def main():
                 application_topology = f"{application_batch}/application_topology_batch_{i}_{x}"
                 subprocess.call(["python3", input_script, f"{i}", application_topology, MOBILE_GPU, EDGE_GPU, CLOUD_GPU ])
 
+    if run_sim == True:
+        for algorithm in first_level_subdirectory:
+            if algorithm.startswith('.'):   # to ignore any hidden file
+                continue
+            directory_name = f"{input_dir}{algorithm}/"
+            if not path.isdir(directory_name):
+                os.mkdir(directory_name)
+            
+            algorithm_program = f"{script_folder}/{algorithm}"
 
-    for algorithm in first_level_subdirectory:
-        if algorithm.startswith('.'):   # to ignore any hidden file
-            continue
-        directory_name = f"{input_dir}{algorithm}/"
-        if not path.isdir(directory_name):
-            os.mkdir(directory_name)
-        
-        algorithm_program = f"{script_folder}/{algorithm}"
-
-        run_algorithm_eval(directory_name, algorithm_program)
+            run_algorithm_eval(directory_name, algorithm_program)
 
 
 def run_algorithm_eval(directory_name, algorithm_program):
