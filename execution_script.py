@@ -7,10 +7,14 @@ temp_dir = "./input_dir"
 input_script = "./input_gen.py"
 lower_bound_folder = "./lower_bound_dir"
 script_folder = "./scripts"
-batch_size = 20
-application_count = 20
+batch_size = 5
+application_count = 5
 regen_input = True
-run_sim = False
+run_sim = True
+
+offload_probability = [0.1, 0.9]
+
+USE_DNNS = 1
 
 MOBILE_GPU = "ADRENO_640"
 EDGE_GPU = "RTX_3060"
@@ -38,7 +42,7 @@ def main():
 
             for x in range(1, batch_size + 1):
                 application_topology = f"{application_batch}/application_topology_batch_{i}_{x}"
-                subprocess.call(["python3", input_script, f"{i}", application_topology, MOBILE_GPU, EDGE_GPU, CLOUD_GPU ])
+                subprocess.call(["python3", input_script, f"{i}", application_topology, f'{USE_DNNS}', MOBILE_GPU, EDGE_GPU, CLOUD_GPU ])
 
     if run_sim == True:
         for algorithm in first_level_subdirectory:

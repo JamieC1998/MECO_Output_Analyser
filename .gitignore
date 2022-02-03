@@ -144,3 +144,6 @@ templates/
 execution/
 outputs/
 output_dir/
+old_outputs/
+applications_file.txt
+violations.json

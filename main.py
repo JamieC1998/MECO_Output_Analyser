@@ -71,16 +71,27 @@ def read_lower_bound_vals(l_b_dir):
 
 def generate_graphs(algorithm_agg_values):
     graph_time_taken(algorithm_agg_values)
+    print("graph_time_taken done")
     graph_task_completion(algorithm_agg_values)
+    print("graph_task_completion done")
     graph_applications_completion(algorithm_agg_values)
+    print("graph_application_completion done")
     graph_application_completion_times_per_app_size(algorithm_agg_values)
+    print("graph_completion_times done")
     graph_tasks_per_node(algorithm_agg_values)
+    print("graph_tasks_per_node done")
     graph_cpu_usage_per_node_type(algorithm_agg_values)
+    print("graph_cpu_per_node_type done")
     graph_ram_usage_per_node_type(algorithm_agg_values)
+    print("graph_ram_usage_usage done")
     graph_max_ram_per_node_type(algorithm_agg_values)
+    print("graph_ram_per_node done")
     graph_max_cpu_per_node_type(algorithm_agg_values)
+    print("graph_max_cpu done")
     graph_aggregated_normalised_completion_times_by_app(algorithm_agg_values)
+    print("graph_normalised_completion_times done")
     graph_stacked_tasks_completed_per_node_type(algorithm_agg_values)
+    print("graph_time_taken done")
     return
 
 
