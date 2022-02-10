@@ -147,3 +147,6 @@ output_dir/
 old_outputs/
 applications_file.txt
 violations.json
+script/
+old_graph_script.py
+graphs/
