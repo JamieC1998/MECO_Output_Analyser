@@ -154,7 +154,7 @@ def graph_app_completion_rate(app_comp_rate, folder_path):
     ax.set_title(f'Mean Application Completion')
     ax.yaxis.grid(True)
     plt.legend([key.replace('_', ' ').capitalize()
-               for key in app_comp_rate.keys()], loc=1)
+               for key in app_comp_rate.keys()], loc="lower left")
     plt.savefig(f"{folder_path}/mean_application_completion.pdf")
     plt.close()
     return
