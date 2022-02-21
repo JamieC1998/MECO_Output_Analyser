@@ -2,14 +2,15 @@ import subprocess
 import os
 from os import path
 
-input_dir = "./output_dir/"
-temp_dir = "./input_dir"
+meta_folder = "./results"
+input_dir = f"{meta_folder}/output_dir/"
+temp_dir = f"{meta_folder}/input_dir"
 input_script = "./input_gen.py"
 algorithm_program = "./script/algorithm_simulator"
 batch_size = 20
 application_count = 20
-regen_input = False
-run_sim = True
+regen_input = True
+run_sim = False
 algorithm_modes = ["reactive_basic", "reactive_mobile", "preallocation", "partition", "proactive"]
 application_types = {
     "dnn": 1,
@@ -43,6 +44,9 @@ def main():
     for k in application_types.keys():
         if not path.isdir(f"{temp_dir}/{k}"):
             os.mkdir(f"{temp_dir}/{k}")
+
+    if not path.isdir(meta_folder):
+        os.mkdir(meta_folder)
     
     if regen_input == True:
         #CREATING INPUT FILES
@@ -82,6 +86,11 @@ def run_output(count, directory, batch_size, allocation_program, algorithm_mode,
         application_topology = f"{temp_dir}/{application_type}/{count}/application_topology_batch_{count}_{i}"
         output_topology = f"{instance_dir}algorithm_output_{count}_{i}.json"
 
+        if os.path.isfile(output_topology):
+            print(f"{algorithm_mode} {count} {i} exists, skipping")
+            continue
+
+        print(f"{algorithm_mode} {count} {i}")
         subprocess.call([allocation_program, application_topology, output_topology, algorithm_mode])
 
     return

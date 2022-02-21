@@ -7,10 +7,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numpy.core.fromnumeric import std
 
-column_width=0.2
+column_width = 0.16
 
-algorithm_folder = "./output_dir"
-graph_folder = "./graphs"
+meta_folder = "./results/"
+algorithm_folder = f"{meta_folder}output_dir"
+graph_folder = f"{meta_folder}graphs"
 script_name = "algorithm_output"
 
 edge_node_count = 3
@@ -77,7 +78,8 @@ def graph_task_completion_rate_by_node_type(app_task_rate, folder_path):
     x_pos = []
     width_val = column_width
     for algo, vol in task_node_meta_value.items():
-        val = {k:v for k,v in vol.items() if int(k) == 1 or int(k) == len(v) or int(k) % 2 == 0}
+        val = {k: v for k, v in vol.items() if int(k) == 1 or int(k)
+               == len(v) or int(k) % 2 == 0}
         indices = list(val.keys())
         if len(x_pos) == 0:
             x_pos = np.arange(len(val))
@@ -113,7 +115,8 @@ def graph_task_completion_rate_by_node_type(app_task_rate, folder_path):
         algo_name = algo_name.replace("_", " ")
         for typ in ntypes:
             legends.append(f"{algo_name} {typ}")
-    plt.legend(legends, prop={'size': 6}, loc = 'lower left')
+    plt.ylim([0, 1.3])
+    plt.legend(legends, prop={'size': 6}, loc='upper center', ncol=4)
     ax.set_xticks(np.arange(len(x_pos)))
     ax.set_xticklabels([i for i in indices])
     ax.set_title(
@@ -153,8 +156,9 @@ def graph_app_completion_rate(app_comp_rate, folder_path):
     ax.set_ylabel('Percentage of Applications Completed')
     ax.set_title(f'Mean Application Completion')
     ax.yaxis.grid(True)
+    plt.ylim([0, 1.2])
     plt.legend([key.replace('_', ' ').capitalize()
-               for key in app_comp_rate.keys()], loc="lower left")
+               for key in app_comp_rate.keys()], loc="upper center", ncol=3)
     plt.savefig(f"{folder_path}/mean_application_completion.pdf")
     plt.close()
     return
