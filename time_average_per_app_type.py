@@ -3,9 +3,12 @@ from time import process_time
 import numpy as np
 import json
 
-input_directory = "/Users/jamiecotter/Documents/Work/PhD/MECO_output_analyser/input_dir"
+input_directory = "./results/input_dir"
 output_file = "application_type_properties.json"
 mobile_to_edge_bandwidth = 150
+mobile_to_edge_latency = 20
+mobile_to_cloud_latency = 70
+mobile_to_cloud_bandwidth = 36
 
 
 def main():
@@ -22,19 +25,32 @@ def main():
 def generateResult(application_results):
     for app_type in application_results.keys():
         application_results[app_type]["mobile_over_edge"] = application_results[app_type]["process_time_mobile"] / application_results[app_type]["process_time_edge"]
+        
         application_results[app_type]["average_edge_input_time"] = application_results[app_type]["input_size"] / mobile_to_edge_bandwidth
         application_results[app_type]["average_edge_output_time"] = application_results[app_type]["output_size"] / mobile_to_edge_bandwidth
-        application_results[app_type]["input_chaining_edge_time"] = application_results[app_type]["average_edge_input_time"] + application_results[app_type]["process_time_edge"] + (20 / 1000)
-        application_results[app_type]["reactive_edge_time"] = application_results[app_type]["average_edge_output_time"] + application_results[app_type]["process_time_edge"] + application_results[app_type]["average_edge_input_time"] + (40 / 1000)
-        application_results[app_type]["mobile_over_reactive"] = application_results[app_type]["process_time_mobile"] / application_results[app_type]["reactive_edge_time"]
-        application_results[app_type]["mobile_over_input_chaining"] = application_results[app_type]["process_time_mobile"] / application_results[app_type]["input_chaining_edge_time"]
+        
+        application_results[app_type]["average_cloud_input_time"] = application_results[app_type]["input_size"] / mobile_to_cloud_bandwidth
+        application_results[app_type]["average_cloud_output_time"] = application_results[app_type]["output_size"] / mobile_to_cloud_bandwidth
+
+        application_results[app_type]["input_chaining_edge_time"] = application_results[app_type]["average_edge_input_time"] + application_results[app_type]["process_time_edge"] + (mobile_to_edge_latency / 1000)
+        application_results[app_type]["reactive_edge_time"] = application_results[app_type]["average_edge_output_time"] + application_results[app_type]["process_time_edge"] + application_results[app_type]["average_edge_input_time"] + ((mobile_to_edge_latency * 2) / 1000)
+        application_results[app_type]["mobile_over_reactive_edge"] = application_results[app_type]["process_time_mobile"] / application_results[app_type]["reactive_edge_time"]
+        application_results[app_type]["mobile_over_input_chaining_edge"] = application_results[app_type]["process_time_mobile"] / application_results[app_type]["input_chaining_edge_time"]
+
+        application_results[app_type]["input_chaining_cloud_time"] = application_results[app_type]["average_cloud_input_time"] + application_results[app_type]["process_time_cloud"] + (mobile_to_cloud_latency / 1000)
+        application_results[app_type]["reactive_cloud_time"] = application_results[app_type]["average_cloud_output_time"] + application_results[app_type]["process_time_cloud"] + application_results[app_type]["average_cloud_input_time"] + ((mobile_to_cloud_latency * 2) / 1000)
+        application_results[app_type]["mobile_over_reactive_cloud"] = application_results[app_type]["process_time_mobile"] / application_results[app_type]["reactive_cloud_time"]
+        application_results[app_type]["mobile_over_input_chaining_cloud"] = application_results[app_type]["process_time_mobile"] / application_results[app_type]["input_chaining_cloud_time"]
 
     f = open(f"./raw_{output_file}", "w")
     json.dump(application_results, f)
     
     for app_type in application_results.keys():
-        application_results[app_type]["mobile_over_reactive"] = application_results[app_type]["mobile_over_reactive"] * 100
-        application_results[app_type]["mobile_over_input_chaining"] = application_results[app_type]["mobile_over_input_chaining"] * 100
+        application_results[app_type]["mobile_over_reactive_edge"] = application_results[app_type]["mobile_over_reactive_edge"] * 100
+        application_results[app_type]["mobile_over_input_chaining_edge"] = application_results[app_type]["mobile_over_input_chaining_edge"] * 100
+
+        application_results[app_type]["mobile_over_reactive_cloud"] = application_results[app_type]["mobile_over_reactive_cloud"] * 100
+        application_results[app_type]["mobile_over_input_chaining_cloud"] = application_results[app_type]["mobile_over_input_chaining_cloud"] * 100
 
         for k in application_results[app_type].keys():
             application_results[app_type][k] = round(application_results[app_type][k], 4)
