@@ -5,6 +5,7 @@ import json
 from os import path
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 from numpy.core.fromnumeric import std
 DEBUG_MODE= ""
 
@@ -15,6 +16,7 @@ algorithm_folder = f"{meta_folder}output_dir"
 graph_folder = f"{meta_folder}graphs"
 script_name = "algorithm_output"
 
+algorithms = ['reactive_basic', 'reactive_mobile', 'preallocation', 'proactive', 'partition']
 edge_node_count = 3
 topology = {
     'mobile': {
@@ -29,6 +31,7 @@ topology = {
         "ram": sys.maxsize
     }
 }
+devices = list(topology.keys())
 
 
 def main():
@@ -61,6 +64,58 @@ def generate_graphs(application_type):
     graph_communication_v_computation_per_algo(agg_vals['communication_computation'], folder_path)
     return
 
+
+def graph_communication_v_computation_comparison(comms_comp_ratios, folder_path):
+    """
+    Parameters
+    ==========
+    This requires both the 10 and 30% results to be available. Recommendation is
+    to pickle them separately and reload them before this is called, as processing
+    both results takes lots of memory.
+
+    comms_comp_ratios: dictionary {10: {'generic': agg_vals['communication_computation'],
+                                        'dnn': agg_vals_dnn['communication_computation']},
+                                   30: <similar>}
+
+    folder_path: ...
+    """
+    fig, axs = plt.subplots(2,1, sharex=True)
+    comms_comp_ratios_10 = comms_comp_ratios[10]
+    comms_comp_ratios_30 = comms_comp_ratios[30]
+    for app_idx, app_type in enumerate(['generic', 'dnn']):
+        for idx, alg in enumerate(algs):
+            comm_mean = np.mean(comms_comp_ratios_10[app_type][alg]['comm'])
+            comp_mean = np.mean(comms_comp_ratios_10[app_type][alg]['comp'])
+            comm_ratio = comm_mean/(comm_mean+comp_mean)
+            comp_ratio = comp_mean/(comm_mean+comp_mean)
+            axs[app_idx].bar(1+idx, comm_ratio, bottom=0, width=0.4, color='tab:blue')
+            axs[app_idx].bar(1+idx, comp_ratio, bottom=comm_ratio, width=0.4, color='tab:orange')
+            comm_mean = np.mean(comms_comp_ratios_30[app_type][alg]['comm'])
+            comp_mean = np.mean(comms_comp_ratios_30[app_type][alg]['comp'])
+            comm_ratio = comm_mean/(comm_mean+comp_mean)
+            comp_ratio = comp_mean/(comm_mean+comp_mean)
+            axs[app_idx].bar(1+idx+0.45, comm_ratio, bottom=0, width=0.4,
+                             color='tab:blue', hatch='//')
+            axs[app_idx].bar(1+idx+0.45, comp_ratio, bottom=comm_ratio, width=0.4,
+                             color='tab:orange', hatch='//')
+    axs[0].set_ylabel('Generic')
+    axs[1].set_ylabel('DNN')
+    # Set xitcks on top plot so the labels from top don't overlap with bottom
+    axs[0].set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
+    # Set xticks as algorithm names
+    axs[1].set_xticks([1.2+x for x in range(5)])
+    axs[1].set_xticklabels(['reactive\nbasic', 'reactive\nmobile',
+                            'preallocation', 'proactive', 'partition'])
+    # Patches for the legend
+    patches = [mpatches.Patch(color='tab:orange', label='computation'),
+               mpatches.Patch(color='tab:blue', label='communication'),
+               mpatches.Patch(fill=False, hatch='//',edgecolor='black', label='30% non-offloadable'),
+               mpatches.Patch(fill=False, edgecolor='black', label='10% non-offloadable')]
+    # Display the legend only on the bottom plot
+    axs[1].legend(handles=patches, loc='lower center', ncol=2)
+    plt.tight_layout()  # Maximise plots in figure
+    fig.subplots_adjust(hspace=0)   # Remove the space between top and bottom
+    plt.savefig(f"{folder_path}/comms_vs_comp_comparison.pdf", dpi=150)
 
 def graph_communication_v_computation_per_algo(app_task_rate, folder_path):
     fig, ax = plt.subplots()
@@ -117,7 +172,6 @@ def graph_communication_v_computation_per_algo(app_task_rate, folder_path):
         f"{folder_path}/communication_computation_time_ratio.pdf")
     plt.close()
     return
-
 
 def graph_task_completion_rate_by_node_type(app_task_rate, folder_path):
     task_node_meta_value = {ky: {} for ky in app_task_rate.keys()}
@@ -188,6 +242,81 @@ def graph_task_completion_rate_by_node_type(app_task_rate, folder_path):
     plt.close()
     return
 
+def graph_task_completion_rate_by_node_type_hatched(app_task_rate, folder_path):
+    """
+    Hatched plot with reduced legend for the task completion and node type usage.
+    """
+    x_coords = range(2,21,2) # Number of applications considered
+    fills = {'mobile': 'xxxx', 'edge': '..', 'cloud': '****'}   # Hatches for each device type
+    colors = {'reactive_basic': 'tab:blue',     # Colors for the algorithms
+              'reactive_mobile': 'tab:orange',
+              'preallocation': 'tab:green',
+              'proactive': 'tab:red',
+              'partition': 'tab:purple'}
+
+    for idx, alg in enumerate(algorithms):
+        bottom = np.array([np.float64(0) for x in x_coords])
+        for dev in devices:
+            # Get the values for this type of device
+            vals = np.array([
+                np.mean([app_task_rate[alg][str(x)][_iter][dev]
+                    for _iter in app_task_rate[alg][str(x)].keys()])
+                for x in x_coords])
+            # Plot a bar for each application set size
+            plt.bar([x+idx*0.3 for x in x_coords], vals,
+                    bottom=bottom, width=0.3,
+                    edgecolor='black', color=colors[alg], hatch=fills[dev])
+            # Update the bottom of the bars
+            bottom += vals
+    plt.xticks(x_coords, x_coords)
+
+    # Prepare the legend with manual patches for the colors (algs) and hatches (devices)
+    leg_algs = [mpatches.Patch(fill=False, hatch=h, label=d) for d, h in fills.items()]
+    leg_devs = [mpatches.Patch(color=c, label=a) for a,c in colors.items()]
+    # The location of the legend and the ylim of the graph should be tweaked
+    # based on the graph.
+    plt.ylim([0,1.2])
+    plt.legend(handles=leg_fills+patches, ncol=3, fontsize='small', loc='upper right')
+    plt.grid(True, axis='y')
+    # modified the following so that set size is always 20
+    plt.savefig(
+        f"{folder_path}/tasks_completed_per_node_type_set_size_20.pdf")
+    plt.close()
+    return
+
+def graph_app_completion_rate_generic_dnn(folder_path):
+    """
+    Two-in-one app completion rate results plot, combines generic and dnn.
+    Requires obtaining both results. Below it is done in the function but
+    could be passed as parameters.
+    """
+    # The following required to obtain the results for both generic and DNN
+    sim_results = fetchAlgorithmResults('generic')
+    sim_results_dnn = fetchAlgorithmResults('dnn')
+    agg_vals = aggregate_values(sim_results)
+    agg_vals_dnn = aggregate_values(sim_results_dnn)
+
+    x_coords = range(2,21,2)
+    fig, axs = plt.subplots(2,1, sharex=True)
+    for app_idx, app_type in enumerate([agg_vals, agg_vals_dnn]):
+        app_comp = app_type['app_completion_rate_per_app_size']
+        for idx, alg in enumerate(algs):
+            axs[app_idx].bar([x+idx*0.3 for x in x_coords],
+                             [np.mean(app_comp[alg][str(x)]) for x in x_coords],
+                             width=0.3)
+    # Tick labels for x axis
+    axs[1].set_xticks([x+0.5 for x in x_coords])
+    axs[1].set_xticklabels(x_coords)
+    # Tick labels for y axis of top plot
+    axs[0].set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
+    # Axis labels
+    axs[1].set_xlabel('# applications')
+    axs[0].set_ylabel('Generic')
+    axs[1].set_ylabel('DNN')
+    # Plot legend
+    axs[0].legend(algs, ncol=3, fontsize='small')
+    plt.tight_layout()
+    fig.subplots_adjust(hspace=0)
 
 def graph_app_completion_rate(app_comp_rate, folder_path):
     width_val = column_width
