@@ -83,7 +83,7 @@ def graph_communication_v_computation_comparison(comms_comp_ratios, folder_path)
     comms_comp_ratios_10 = comms_comp_ratios[10]
     comms_comp_ratios_30 = comms_comp_ratios[30]
     for app_idx, app_type in enumerate(['generic', 'dnn']):
-        for idx, alg in enumerate(algs):
+        for idx, alg in enumerate(algorithms):
             comm_mean = np.mean(comms_comp_ratios_10[app_type][alg]['comm'])
             comp_mean = np.mean(comms_comp_ratios_10[app_type][alg]['comp'])
             comm_ratio = comm_mean/(comm_mean+comp_mean)
@@ -300,7 +300,7 @@ def graph_app_completion_rate_generic_dnn(folder_path):
     fig, axs = plt.subplots(2,1, sharex=True)
     for app_idx, app_type in enumerate([agg_vals, agg_vals_dnn]):
         app_comp = app_type['app_completion_rate_per_app_size']
-        for idx, alg in enumerate(algs):
+        for idx, alg in enumerate(algorithms):
             axs[app_idx].bar([x+idx*0.3 for x in x_coords],
                              [np.mean(app_comp[alg][str(x)]) for x in x_coords],
                              width=0.3)
@@ -314,9 +314,10 @@ def graph_app_completion_rate_generic_dnn(folder_path):
     axs[0].set_ylabel('Generic')
     axs[1].set_ylabel('DNN')
     # Plot legend
-    axs[0].legend(algs, ncol=3, fontsize='small')
+    axs[0].legend(algorithms, ncol=3, fontsize='small')
     plt.tight_layout()
     fig.subplots_adjust(hspace=0)
+    plt.savefig(f"{folder_path}/app_completion_rate_generic_and_dnn.pdf", dpi=150)
 
 def graph_app_completion_rate(app_comp_rate, folder_path):
     width_val = column_width
